@@ -1,5 +1,5 @@
 :root {
-  --backdrop: #3a2f2a;
+  --backdrop: #cba364;
   --paper: #fdfcfa;
   --page: #f6f1ea;
   --page-deep: #ece4d8;
@@ -42,8 +42,9 @@ body {
   flex-direction: column;
   padding: 24px 16px 4rem;
   background:
-    radial-gradient(ellipse at 50% 40%, #6b584c 0%, transparent 70%),
-    linear-gradient(160deg, #4a3c35, var(--backdrop) 60%, #2a221e);
+    radial-gradient(ellipse at 50% 35%, rgba(255, 244, 218, 0.75) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 110%, rgba(140, 98, 44, 0.45) 0%, transparent 60%),
+    linear-gradient(160deg, #e2c68f, #cba364 55%, #b38848);
 }
 
 /* Slow drifting candle-light glow behind everything */
@@ -52,8 +53,8 @@ body {
   position: absolute;
   inset: -20%;
   background:
-    radial-gradient(circle at 30% 30%, rgba(255, 214, 160, 0.16), transparent 35%),
-    radial-gradient(circle at 70% 65%, rgba(255, 190, 140, 0.12), transparent 40%);
+    radial-gradient(circle at 28% 28%, rgba(255, 250, 235, 0.35), transparent 35%),
+    radial-gradient(circle at 72% 68%, rgba(255, 236, 200, 0.28), transparent 40%);
   animation: glow 18s ease-in-out infinite alternate;
   pointer-events: none;
 }
@@ -79,7 +80,7 @@ body {
 }
 
 .revealed .card {
-  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5), 0 0 70px rgba(255, 228, 180, 0.22);
+  box-shadow: 0 40px 80px rgba(92, 62, 22, 0.4), 0 0 80px rgba(255, 248, 228, 0.6);
   will-change: transform;
 }
 
@@ -106,7 +107,7 @@ body {
   background: var(--paper);
   padding: 6% 6% 7%;
   text-align: center;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 30px 60px rgba(92, 62, 22, 0.35), 0 4px 12px rgba(92, 62, 22, 0.25);
   border-radius: 3px;
 }
 
@@ -200,7 +201,7 @@ body {
   inset: 0;
   background: #f3efe7;
   border-radius: 2px;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 30px 60px rgba(92, 62, 22, 0.35), 0 4px 12px rgba(92, 62, 22, 0.25);
 }
 
 .js .slot {
@@ -287,10 +288,11 @@ body {
   display: block;
   margin: 1.4rem auto 0;
   padding: 0.55rem 1.4rem;
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: 99px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #f6efe4;
+  background: rgba(110, 76, 30, 0.22);
+  color: #fffaf0;
+  text-shadow: 0 1px 2px rgba(90, 60, 20, 0.4);
   font: italic 1rem var(--serif);
   letter-spacing: 0.05em;
   cursor: pointer;
@@ -312,8 +314,8 @@ body {
   left: 50%;
   width: 14px;
   height: 14px;
-  border-right: 1px solid #e9dcc6;
-  border-bottom: 1px solid #e9dcc6;
+  border-right: 1.5px solid #fffaf0;
+  border-bottom: 1.5px solid #fffaf0;
   transform: translateX(-50%) rotate(45deg);
   animation: bob 2s ease-in-out infinite;
 }
@@ -438,6 +440,38 @@ main section {
 
 .footer .script { font-size: 2.6rem; }
 
+/* Music on/off */
+.music-toggle {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  background: rgba(181, 133, 74, 0.85);
+  color: #fffaf0;
+  box-shadow: 0 6px 18px rgba(92, 62, 22, 0.3);
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.music-toggle[hidden] { display: none; }
+.music-toggle svg { width: 22px; height: 22px; }
+.music-toggle .mute-line { display: none; }
+.music-toggle[aria-pressed="false"] .mute-line { display: inline; }
+.music-toggle[aria-pressed="true"] svg { animation: sway 2.4s ease-in-out infinite; }
+
+@keyframes sway {
+  0%, 100% { transform: rotate(-6deg); }
+  50% { transform: rotate(6deg); }
+}
+
 /* Scroll fade-ins */
 .js .reveal {
   opacity: 0;
@@ -465,6 +499,6 @@ main section {
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .open-hint, .scroll-cue, .stage::before { animation: none; }
+  .open-hint, .scroll-cue, .stage::before, .music-toggle svg { animation: none !important; }
   .js .reveal { opacity: 1; transform: none; transition: none; }
 }

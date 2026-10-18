@@ -10,3 +10,9 @@ in place over a softly animated background (gold dust, petals and candle-light g
 countdown and the ceremony and reception details with map and calendar links.
 
 All wording lives in `index.html`. The countdown date is `data-date` on `#countdown`.
+
+The background music (`assets/music.mp3`) is an original piano arrangement of
+Pachelbel's Canon in D, a public-domain piece, synthesised by
+`tools/compose_music.py`, so it is free of copyright. To regenerate it:
+`python3 tools/compose_music.py music.wav && ffmpeg -i music.wav -b:a 128k assets/music.mp3`.
+It starts when a guest opens the card and can be paused with the music button.

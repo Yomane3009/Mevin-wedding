@@ -94,6 +94,8 @@
 
   function open() {
     if (opened || animating) return;
+    // called from the guest's tap, so the browser allows the music to start here
+    window.dispatchEvent(new Event("invitation:open"));
     settle(1, reduceMotion ? 0 : 1800 * (1 - progress) + 200);
   }
 
@@ -255,8 +257,8 @@
         if (d.x > width + 10) d.x = -10;
         const alpha = 0.25 + 0.45 * (0.5 + 0.5 * Math.sin(time / 900 + d.phase));
         ctx.beginPath();
-        ctx.fillStyle = `rgba(255, 216, 160, ${alpha})`;
-        ctx.shadowColor = "rgba(255, 210, 150, 0.8)";
+        ctx.fillStyle = `rgba(255, 251, 238, ${alpha})`;
+        ctx.shadowColor = "rgba(255, 246, 220, 0.9)";
         ctx.shadowBlur = 6;
         ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
         ctx.fill();
@@ -274,7 +276,7 @@
         ctx.rotate(p.angle);
         ctx.scale(1, 0.55 + 0.35 * Math.sin(time / 700 + p.phase));
         ctx.beginPath();
-        ctx.fillStyle = `rgba(${p.tint}, 0.55)`;
+        ctx.fillStyle = `rgba(${p.tint}, 0.75)`;
         ctx.moveTo(0, -p.size);
         ctx.quadraticCurveTo(p.size, 0, 0, p.size);
         ctx.quadraticCurveTo(-p.size, 0, 0, -p.size);
@@ -290,7 +292,7 @@
         s.vx *= 0.98;
         s.life -= 0.012;
         ctx.beginPath();
-        ctx.fillStyle = `rgba(255, 224, 170, ${Math.max(0, s.life)})`;
+        ctx.fillStyle = `rgba(255, 252, 240, ${Math.max(0, s.life)})`;
         ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
         ctx.fill();
       }
@@ -302,4 +304,54 @@
     new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; }).observe(stage);
     requestAnimationFrame(frame);
   }
+})();
+
+// Soft background music: starts with the opening tap, fades in, and can be paused
+(function music() {
+  const audio = document.getElementById("music");
+  const toggle = document.getElementById("music-toggle");
+  const VOLUME = 0.4;
+  let wanted = true;
+  try { wanted = localStorage.getItem("music") !== "off"; } catch (e) {}
+
+  let fade = 0;
+  function fadeTo(target, ms, done) {
+    const id = ++fade;
+    const from = audio.volume;
+    const start = performance.now();
+    function step(now) {
+      if (id !== fade) return; // a newer fade took over
+      const t = Math.max(0, Math.min(1, (now - start) / ms));
+      audio.volume = Math.max(0, Math.min(1, from + (target - from) * t));
+      if (t < 1) requestAnimationFrame(step);
+      else if (done) done();
+    }
+    requestAnimationFrame(step);
+  }
+
+  function play() {
+    audio.volume = 0;
+    const started = audio.play();
+    if (started) started.catch(() => setState(false));
+    fadeTo(VOLUME, 3000);
+  }
+
+  function setState(on) {
+    toggle.setAttribute("aria-pressed", String(on));
+    toggle.setAttribute("aria-label", on ? "Pause music" : "Play music");
+  }
+
+  window.addEventListener("invitation:open", () => {
+    toggle.hidden = false;
+    setState(wanted);
+    if (wanted) play();
+  }, { once: true });
+
+  toggle.addEventListener("click", () => {
+    const on = toggle.getAttribute("aria-pressed") !== "true";
+    setState(on);
+    try { localStorage.setItem("music", on ? "on" : "off"); } catch (e) {}
+    if (on) play();
+    else fadeTo(0, 400, () => audio.pause());
+  });
 })();
