@@ -38,9 +38,8 @@ body {
   min-height: 100vh;
   min-height: 100svh;
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 2rem 16px 4rem;
+  flex-direction: column;
+  padding: 24px 16px 4rem;
   background:
     radial-gradient(ellipse at 50% 40%, #6b584c 0%, transparent 70%),
     linear-gradient(160deg, #4a3c35, var(--backdrop) 60%, #2a221e);
@@ -48,16 +47,19 @@ body {
 
 .card-wrap {
   position: relative;
-  width: min(560px, 100%);
-  perspective: 1600px;
+  width: min(520px, 100%);
+  margin: auto;
   container-type: inline-size;
-  transform-origin: 50% 0;
-  transform: scale(var(--fit, 1));
 }
 
-.js .card-wrap.opened {
-  transform: scale(1);
-  transition: transform 1.3s cubic-bezier(0.45, 0, 0.2, 1) 1.6s;
+.js .card-wrap {
+  width: min(520px, 100%, calc((100svh - 150px) / 1.45));
+  padding-top: calc(var(--p, 0) * var(--pull, 0px));
+  transform-origin: 50% 0;
+  transform: scale(calc(1 - var(--p, 0) * (1 - var(--shrink, 1))));
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* The invitation card itself, scaled to its width like paper */
@@ -143,76 +145,109 @@ body {
 
 .card .compliments { margin: max(10px, 3cqw) 0 0; }
 
-/* Vellum sleeve with pearls */
+/* Vellum sleeve: the card sits in it and is pulled up out of the top */
+.pocket-back,
 .vellum,
 .ribbon,
 .open-hint { display: none; }
 
+.js .pocket {
+  position: relative;
+  height: 145cqw;
+}
+
+.js .pocket-back {
+  display: block;
+  position: absolute;
+  inset: 0;
+  background: #f3efe7;
+  border-radius: 2px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.js .slot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: -400cqw;
+  overflow: hidden;
+}
+
+.js .card {
+  position: absolute;
+  left: 3cqw;
+  right: 3cqw;
+  top: calc(400cqw + 2.5cqw);
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.15);
+  transform-origin: 50% 100%;
+  transform: translateY(calc(var(--p, 0) * var(--pull, 0px) * -1)) rotate(calc(var(--tilt, 0) * 1deg));
+}
+
 .js .vellum {
   display: block;
   position: absolute;
-  inset: -1.5%;
-  border-radius: 3px;
+  inset: 0;
+  border-radius: 2px;
   background:
-    radial-gradient(circle at 18% 12%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
-    radial-gradient(circle at 76% 8%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
-    radial-gradient(circle at 88% 30%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
-    radial-gradient(circle at 10% 38%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
-    radial-gradient(circle at 30% 62%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
-    radial-gradient(circle at 84% 66%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
-    radial-gradient(circle at 14% 84%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
-    radial-gradient(circle at 62% 90%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
-    radial-gradient(circle at 92% 92%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
-    radial-gradient(circle at 46% 22%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
-    linear-gradient(170deg, rgba(255, 255, 255, 0.62), rgba(250, 248, 244, 0.5) 50%, rgba(255, 255, 255, 0.6));
-  -webkit-backdrop-filter: blur(1.4px);
-  backdrop-filter: blur(1.4px);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8), 0 10px 30px rgba(0, 0, 0, 0.2);
-  transform-origin: 50% 0;
-  transition: transform 1.7s cubic-bezier(0.5, 0, 0.3, 1) 0.6s, opacity 0.7s ease 1.6s;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.15));
+    radial-gradient(circle at 22% 9%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    radial-gradient(circle at 54% 6%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    radial-gradient(circle at 84% 14%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    radial-gradient(circle at 12% 30%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    radial-gradient(circle at 72% 33%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    radial-gradient(circle at 20% 60%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    radial-gradient(circle at 88% 58%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    radial-gradient(circle at 64% 70%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    radial-gradient(circle at 30% 80%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    radial-gradient(circle at 14% 92%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    radial-gradient(circle at 56% 90%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    radial-gradient(circle at 86% 86%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    linear-gradient(172deg, rgba(255, 255, 255, 0.66), rgba(250, 248, 244, 0.52) 50%, rgba(255, 255, 255, 0.62));
+  -webkit-backdrop-filter: blur(1.6px);
+  backdrop-filter: blur(1.6px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 0 0 1px rgba(255, 255, 255, 0.6), 0 -1px 3px rgba(0, 0, 0, 0.12);
 }
 
-/* Ribbon band and bow tied across the sleeve */
+/* Chiffon ribbon, bow and a sprig of baby's breath tied across the sleeve */
 .js .ribbon {
   display: block;
   position: absolute;
-  left: -2%;
-  right: -2%;
-  top: 43%;
+  left: -1.5%;
+  right: -1.5%;
+  top: 50%;
   height: 0;
   pointer-events: none;
 }
 
 .band {
   position: absolute;
-  top: -4.5cqw;
-  width: 52%;
-  height: 9cqw;
-  transition: transform 1s cubic-bezier(0.5, 0, 0.3, 1) 0.15s, opacity 0.8s ease 0.3s;
+  left: 0;
+  top: -8cqw;
+  width: 100%;
+  height: 16cqw;
 }
 
-.band-left { left: 0; }
-.band-right { right: 0; }
+.sprig {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 46%;
+  transform: translate(-46%, -88%) rotate(-6deg);
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.15));
+}
 
 .bow {
   position: absolute;
   left: 50%;
   top: 0;
-  width: 54%;
-  transform: translate(-50%, -44%);
+  width: 58%;
+  transform: translate(-50%, -40%);
   filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.18));
-  transition: transform 0.9s cubic-bezier(0.5, 0, 0.4, 1), opacity 0.7s ease 0.2s;
 }
 
 .js .open-hint {
   display: block;
-  position: absolute;
-  left: 50%;
-  top: calc(100% + 1.2rem / var(--fit, 1));
-  transform: translateX(-50%) scale(calc(1 / var(--fit, 1)));
-  transform-origin: 50% 0;
-  white-space: nowrap;
+  margin: 1.4rem auto 0;
   padding: 0.55rem 1.4rem;
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 99px;
@@ -225,23 +260,13 @@ body {
   transition: opacity 0.4s;
 }
 
-.js .card-wrap { cursor: pointer; }
+.js .open-hint::before { content: "\2191\00a0\00a0"; font-style: normal; }
 
-.js .card {
-  transition: transform 1.2s ease 0.9s, box-shadow 1.2s ease 0.9s;
-}
+.js .card-wrap { cursor: grab; }
+.js .card-wrap.dragging { cursor: grabbing; }
 
-/* Opening sequence */
-.opened .bow { transform: translate(-50%, 40%) scale(0.6) rotate(-14deg); opacity: 0; }
-.opened .band-left { transform: translateX(-60%); opacity: 0; }
-.opened .band-right { transform: translateX(60%); opacity: 0; }
-.opened .vellum { transform: translateY(-28%) rotateX(-100deg); opacity: 0; }
-.opened .open-hint { opacity: 0; pointer-events: none; animation: none; }
-.opened .card { transform: translateY(-4px); box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5), 0 0 60px rgba(255, 240, 210, 0.25); }
-.js .opened { cursor: default; }
-
-.card-wrap.gone .vellum,
-.card-wrap.gone .ribbon { display: none; }
+.opened .open-hint { display: none; }
+.js .card-wrap.opened { cursor: default; touch-action: auto; -webkit-user-select: auto; user-select: auto; }
 
 .scroll-cue {
   position: absolute;
@@ -396,7 +421,6 @@ main section {
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .vellum, .band, .bow, .card { transition-duration: 0.01s !important; transition-delay: 0s !important; }
   .open-hint, .scroll-cue { animation: none; }
   .js .reveal { opacity: 1; transform: none; transition: none; }
 }

@@ -1,50 +1,103 @@
-// Opening: tap the card to untie the bow and lift the vellum sleeve
+// Opening: the card is pulled up out of its vellum sleeve, by tap or by dragging up
 (function opening() {
   const wrap = document.getElementById("card-wrap");
-  const button = document.getElementById("open-btn");
+  const card = wrap.querySelector(".card");
+  const pin = card.querySelector(".pin");
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let progress = 0;
   let opened = false;
+  let animating = false;
+  let drag = null;
 
-  // While sealed, shrink the card so the whole thing fits on screen
-  function fit() {
-    if (opened) return;
-    const room = window.innerHeight - 32 - 80;
-    const scale = Math.min(1, room / wrap.offsetHeight);
-    wrap.style.setProperty("--fit", scale.toFixed(3));
+  // How far the card rises: until the wedding date and church location clear the sleeve.
+  // --shrink eases the whole card back a little so the bow stays in view once it is out.
+  function measure() {
+    const width = wrap.clientWidth;
+    const pull = pin.offsetTop + pin.offsetHeight + width * 0.04;
+    const needed = wrap.getBoundingClientRect().top + window.scrollY + pull + width * 1.45 * 0.72;
+    const shrink = Math.min(1, (window.innerHeight - 16) / needed);
+    wrap.style.setProperty("--pull", `${pull}px`);
+    wrap.style.setProperty("--shrink", Math.max(0.82, shrink).toFixed(3));
   }
-  fit();
-  window.addEventListener("resize", fit);
-  if (document.fonts) document.fonts.ready.then(fit);
 
-  function open() {
-    if (opened) return;
+  function render(p) {
+    progress = p;
+    wrap.style.setProperty("--p", p.toFixed(4));
+    // a slight hand-held tilt while the card is in motion
+    wrap.style.setProperty("--tilt", (-2.2 * Math.sin(Math.PI * p)).toFixed(3));
+  }
+
+  function settle(target, duration) {
+    const from = progress;
+    const start = performance.now();
+    const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    animating = true;
+    function frame(now) {
+      const t = duration ? Math.min(1, (now - start) / duration) : 1;
+      render(from + (target - from) * ease(t));
+      if (t < 1) return requestAnimationFrame(frame);
+      animating = false;
+      if (target === 1) finish();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function finish() {
     opened = true;
     wrap.classList.add("opened");
-    const vellum = wrap.querySelector(".vellum");
-    let done = false;
-    const finish = () => {
-      if (done) return;
-      done = true;
-      wrap.classList.add("gone");
-      document.body.classList.remove("sealed");
-    };
-    vellum.addEventListener("transitionend", (event) => {
-      if (event.propertyName === "opacity") finish();
-    });
-    setTimeout(finish, 4000); // fallback if the transition never reports
+    document.body.classList.remove("sealed");
+    // the shrink is a transform, so give back the layout space it leaves below the card
+    const shrink = parseFloat(wrap.style.getPropertyValue("--shrink")) || 1;
+    wrap.style.marginBottom = `${-wrap.offsetHeight * (1 - shrink)}px`;
   }
 
-  wrap.addEventListener("click", (event) => {
-    if (!opened) {
-      event.preventDefault();
-      open();
-    }
+  function open() {
+    if (opened || animating) return;
+    settle(1, reduceMotion ? 0 : 1800 * (1 - progress) + 200);
+  }
+
+  wrap.addEventListener("pointerdown", (event) => {
+    if (opened || animating) return;
+    drag = { y: event.clientY, start: progress, moved: false };
+    wrap.setPointerCapture(event.pointerId);
+    wrap.classList.add("dragging");
   });
-  button.addEventListener("keydown", (event) => {
+
+  wrap.addEventListener("pointermove", (event) => {
+    if (!drag) return;
+    const dy = drag.y - event.clientY;
+    if (Math.abs(dy) > 6) drag.moved = true;
+    if (!drag.moved) return;
+    const pull = parseFloat(getComputedStyle(wrap).getPropertyValue("--pull")) || 1;
+    render(Math.max(0, Math.min(1, drag.start + dy / pull)));
+  });
+
+  function release() {
+    if (!drag) return;
+    const moved = drag.moved;
+    drag = null;
+    wrap.classList.remove("dragging");
+    if (!moved || progress > 0.2) open();
+    else settle(0, 300);
+  }
+  wrap.addEventListener("pointerup", release);
+  wrap.addEventListener("pointercancel", release);
+
+  // Links on the card only work once it is out of the sleeve
+  wrap.addEventListener("click", (event) => {
+    if (!opened) event.preventDefault();
+  });
+
+  document.getElementById("open-btn").addEventListener("keydown", (event) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       open();
     }
   });
+
+  measure();
+  window.addEventListener("resize", () => { if (!opened && !progress) measure(); });
+  if (document.fonts) document.fonts.ready.then(measure);
 })();
 
 // Countdown to the wedding date set on #countdown[data-date]
