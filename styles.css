@@ -1,0 +1,504 @@
+:root {
+  --backdrop: #cba364;
+  --paper: #fdfcfa;
+  --page: #f6f1ea;
+  --page-deep: #ece4d8;
+  --navy: #2c3566;
+  --gold: #b5854a;
+  --line: rgba(181, 133, 74, 0.4);
+  --serif: "Lora", Georgia, serif;
+  --script: "Great Vibes", cursive;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--navy);
+  font-family: var(--serif);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Until the card is opened the page stays on the card */
+.js body.sealed { overflow: hidden; }
+
+.script {
+  font-family: var(--script);
+  font-weight: 400;
+  color: var(--gold);
+}
+
+/* Stage: the card on a warm table-like backdrop */
+.stage {
+  position: relative;
+  overflow: hidden;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 16px 4rem;
+  background:
+    radial-gradient(ellipse at 50% 35%, rgba(255, 244, 218, 0.75) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 110%, rgba(140, 98, 44, 0.45) 0%, transparent 60%),
+    linear-gradient(160deg, #e2c68f, #cba364 55%, #b38848);
+}
+
+/* Slow drifting candle-light glow behind everything */
+.stage::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(circle at 28% 28%, rgba(255, 250, 235, 0.35), transparent 35%),
+    radial-gradient(circle at 72% 68%, rgba(255, 236, 200, 0.28), transparent 40%);
+  animation: glow 18s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+.ambience {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.stage > *:not(.ambience) { position: relative; z-index: 1; }
+.stage > .scroll-cue { position: absolute; }
+
+/* Where the invitation lands once it pops out of the sleeve */
+.revealed:empty { display: none; }
+
+.revealed {
+  width: min(520px, 100%);
+  margin: auto;
+  container-type: inline-size;
+}
+
+.revealed .card {
+  box-shadow: 0 40px 80px rgba(92, 62, 22, 0.4), 0 0 80px rgba(255, 248, 228, 0.6);
+  will-change: transform;
+}
+
+.card-wrap {
+  position: relative;
+  width: min(520px, 100%);
+  margin: auto;
+  container-type: inline-size;
+}
+
+.js .card-wrap {
+  width: min(520px, 100%, calc((100svh - 150px) / 1.45));
+  padding-top: calc(var(--p, 0) * var(--pull, 0px));
+  transform-origin: 50% 0;
+  transform: scale(calc(1 - var(--p, 0) * (1 - var(--shrink, 1))));
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* The invitation card itself, scaled to its width like paper */
+.card {
+  position: relative;
+  background: var(--paper);
+  padding: 6% 6% 7%;
+  text-align: center;
+  box-shadow: 0 30px 60px rgba(92, 62, 22, 0.35), 0 4px 12px rgba(92, 62, 22, 0.25);
+  border-radius: 3px;
+}
+
+.card p {
+  margin: 0 0 max(6px, 1.7cqw);
+  font-size: max(11px, 2.35cqw);
+  line-height: 1.5;
+}
+
+.card b { font-weight: 600; }
+
+.card .lg { font-size: max(13px, 2.9cqw); }
+
+.card .script.sm { font-size: max(20px, 4.6cqw); line-height: 1.2; }
+
+.card .name {
+  margin: max(4px, 1.5cqw) 0 max(2px, 1cqw);
+  font-size: max(30px, 7.6cqw);
+  line-height: 1.15;
+}
+
+.doves {
+  display: block;
+  width: 17%;
+  height: auto;
+  margin: 0 auto 1.5cqw;
+}
+
+.card .verse { font-size: max(9px, 2.2cqw); }
+.card .verse span { padding-left: 14cqw; }
+
+.card .with { margin-top: max(10px, 3cqw); }
+
+.card .venue { margin-top: max(10px, 3cqw); }
+
+.card .when {
+  font-size: max(12px, 2.75cqw);
+  letter-spacing: 0.02em;
+}
+
+.pin {
+  display: inline-block;
+  margin-bottom: max(6px, 2cqw);
+  padding: 0.25em 0.9em;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  color: var(--gold);
+  font-size: max(10px, 2.2cqw);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.pin::before { content: "\2316\00a0"; }
+
+.pin:hover, .pin:focus-visible { background: rgba(181, 133, 74, 0.1); }
+
+.heart-rule {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2cqw;
+  margin: max(8px, 2.5cqw) 0 max(10px, 3cqw);
+  color: var(--gold);
+  font-size: max(12px, 3cqw);
+}
+
+.heart-rule span {
+  width: 14cqw;
+  height: 1px;
+  background: var(--navy);
+  opacity: 0.6;
+}
+
+.card .compliments { margin: max(10px, 3cqw) 0 0; }
+
+/* Vellum sleeve: the card sits in it and is pulled up out of the top */
+.pocket-back,
+.vellum,
+.ribbon,
+.open-hint { display: none; }
+
+.js .pocket {
+  position: relative;
+  height: 145cqw;
+}
+
+.js .pocket-back {
+  display: block;
+  position: absolute;
+  inset: 0;
+  background: #f3efe7;
+  border-radius: 2px;
+  box-shadow: 0 30px 60px rgba(92, 62, 22, 0.35), 0 4px 12px rgba(92, 62, 22, 0.25);
+}
+
+.js .slot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: -400cqw;
+  overflow: hidden;
+}
+
+.js .slot .card {
+  position: absolute;
+  left: 3cqw;
+  right: 3cqw;
+  top: calc(400cqw + 2.5cqw);
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.15);
+  transform-origin: 50% 100%;
+  transform: translateY(calc(var(--p, 0) * var(--pull, 0px) * -1)) rotate(calc(var(--tilt, 0) * 1deg));
+}
+
+.js .vellum {
+  display: block;
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+  background:
+    radial-gradient(circle at 22% 9%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    radial-gradient(circle at 54% 6%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    radial-gradient(circle at 84% 14%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    radial-gradient(circle at 12% 30%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    radial-gradient(circle at 72% 33%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    radial-gradient(circle at 20% 60%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    radial-gradient(circle at 88% 58%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    radial-gradient(circle at 64% 70%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    radial-gradient(circle at 30% 80%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    radial-gradient(circle at 14% 92%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    radial-gradient(circle at 56% 90%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    radial-gradient(circle at 86% 86%, #fff 0 1px, #f1ede6 2.2px, #cfc8bd 3.4px, transparent 4px),
+    linear-gradient(172deg, rgba(255, 255, 255, 0.66), rgba(250, 248, 244, 0.52) 50%, rgba(255, 255, 255, 0.62));
+  -webkit-backdrop-filter: blur(1.6px);
+  backdrop-filter: blur(1.6px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 0 0 1px rgba(255, 255, 255, 0.6), 0 -1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* Chiffon ribbon, bow and a sprig of baby's breath tied across the sleeve */
+.js .ribbon {
+  display: block;
+  position: absolute;
+  left: -1.5%;
+  right: -1.5%;
+  top: 50%;
+  height: 0;
+  pointer-events: none;
+}
+
+.band {
+  position: absolute;
+  left: 0;
+  top: -8cqw;
+  width: 100%;
+  height: 16cqw;
+}
+
+.sprig {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 46%;
+  transform: translate(-46%, -88%) rotate(-6deg);
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.15));
+}
+
+.bow {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 58%;
+  transform: translate(-50%, -40%);
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.18));
+}
+
+.js .open-hint {
+  display: block;
+  margin: 1.4rem auto 0;
+  padding: 0.55rem 1.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 99px;
+  background: rgba(110, 76, 30, 0.22);
+  color: #fffaf0;
+  text-shadow: 0 1px 2px rgba(90, 60, 20, 0.4);
+  font: italic 1rem var(--serif);
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  animation: pulse 2.2s ease-in-out infinite;
+  transition: opacity 0.4s;
+}
+
+.js .open-hint::before { content: "\2191\00a0\00a0"; font-style: normal; }
+
+.js .card-wrap { cursor: grab; }
+.js .card-wrap.dragging { cursor: grabbing; }
+
+.opened .open-hint { display: none; }
+.js .card-wrap.opened { cursor: default; touch-action: auto; -webkit-user-select: auto; user-select: auto; }
+
+.scroll-cue {
+  position: absolute;
+  bottom: 1.4rem;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  border-right: 1.5px solid #fffaf0;
+  border-bottom: 1.5px solid #fffaf0;
+  transform: translateX(-50%) rotate(45deg);
+  animation: bob 2s ease-in-out infinite;
+}
+
+.js body.sealed .scroll-cue { opacity: 0; pointer-events: none; }
+
+/* Sections below the card */
+main section {
+  padding: 4.5rem 16px;
+  text-align: center;
+}
+
+.section-title {
+  margin: 0 0 2rem;
+  font-family: var(--script);
+  font-weight: 400;
+  font-size: clamp(2.4rem, 8vw, 3.2rem);
+  line-height: 1.2;
+  color: var(--gold);
+}
+
+.countdown { background: var(--page-deep); }
+
+.timer {
+  display: flex;
+  justify-content: center;
+  gap: clamp(0.75rem, 5vw, 2.5rem);
+}
+
+.timer div {
+  display: flex;
+  flex-direction: column;
+  min-width: 60px;
+}
+
+.timer span {
+  font-size: clamp(2rem, 9vw, 3.2rem);
+  line-height: 1;
+}
+
+.timer small {
+  margin-top: 0.5rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.timer-done {
+  font-family: var(--script);
+  font-size: 2.5rem;
+  color: var(--gold);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+.event {
+  padding: 2.25rem 1.5rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 24px rgba(58, 47, 42, 0.06);
+}
+
+.event p { margin: 0 0 1rem; }
+
+.event .kicker {
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.event h3 {
+  margin: 0.5rem 0 0.1rem;
+  font-weight: 500;
+  font-size: 1.3rem;
+}
+
+.event .time {
+  font-size: 1.1rem;
+  font-style: italic;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.btn {
+  display: inline-block;
+  padding: 0.65rem 1.2rem;
+  border: 1px solid var(--navy);
+  background: var(--navy);
+  color: #fff;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 0.3s, color 0.3s;
+}
+
+.btn:hover, .btn:focus-visible { background: transparent; color: var(--navy); }
+
+.btn.ghost { background: transparent; color: var(--navy); }
+.btn.ghost:hover, .btn.ghost:focus-visible { background: var(--navy); color: #fff; }
+
+.footer {
+  padding: 3rem 16px 3.5rem;
+  text-align: center;
+}
+
+.footer p { margin: 0; }
+
+.footer .script { font-size: 2.6rem; }
+
+/* Music on/off */
+.music-toggle {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  background: rgba(181, 133, 74, 0.85);
+  color: #fffaf0;
+  box-shadow: 0 6px 18px rgba(92, 62, 22, 0.3);
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.music-toggle[hidden] { display: none; }
+.music-toggle svg { width: 22px; height: 22px; }
+.music-toggle .mute-line { display: none; }
+.music-toggle[aria-pressed="false"] .mute-line { display: inline; }
+.music-toggle[aria-pressed="true"] svg { animation: sway 2.4s ease-in-out infinite; }
+
+@keyframes sway {
+  0%, 100% { transform: rotate(-6deg); }
+  50% { transform: rotate(6deg); }
+}
+
+/* Scroll fade-ins */
+.js .reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.9s ease, transform 0.9s ease;
+}
+
+.js .reveal.visible { opacity: 1; transform: none; }
+
+@keyframes glow {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(4%, -3%) scale(1.08); }
+  100% { transform: translate(-4%, 3%) scale(1); }
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.25); }
+  50% { box-shadow: 0 0 0 8px rgba(255, 255, 255, 0); }
+}
+
+@keyframes bob {
+  0%, 100% { transform: translate(-50%, 0) rotate(45deg); }
+  50% { transform: translate(-50%, 6px) rotate(45deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .open-hint, .scroll-cue, .stage::before, .music-toggle svg { animation: none !important; }
+  .js .reveal { opacity: 1; transform: none; transition: none; }
+}
