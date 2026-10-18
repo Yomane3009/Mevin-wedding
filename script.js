@@ -1,3 +1,52 @@
+// Opening: tap the card to untie the bow and lift the vellum sleeve
+(function opening() {
+  const wrap = document.getElementById("card-wrap");
+  const button = document.getElementById("open-btn");
+  let opened = false;
+
+  // While sealed, shrink the card so the whole thing fits on screen
+  function fit() {
+    if (opened) return;
+    const room = window.innerHeight - 32 - 80;
+    const scale = Math.min(1, room / wrap.offsetHeight);
+    wrap.style.setProperty("--fit", scale.toFixed(3));
+  }
+  fit();
+  window.addEventListener("resize", fit);
+  if (document.fonts) document.fonts.ready.then(fit);
+
+  function open() {
+    if (opened) return;
+    opened = true;
+    wrap.classList.add("opened");
+    const vellum = wrap.querySelector(".vellum");
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      wrap.classList.add("gone");
+      document.body.classList.remove("sealed");
+    };
+    vellum.addEventListener("transitionend", (event) => {
+      if (event.propertyName === "opacity") finish();
+    });
+    setTimeout(finish, 4000); // fallback if the transition never reports
+  }
+
+  wrap.addEventListener("click", (event) => {
+    if (!opened) {
+      event.preventDefault();
+      open();
+    }
+  });
+  button.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      open();
+    }
+  });
+})();
+
 // Countdown to the wedding date set on #countdown[data-date]
 (function countdown() {
   const section = document.getElementById("countdown");
@@ -49,34 +98,4 @@
     { threshold: 0.15 }
   );
   items.forEach((el) => observer.observe(el));
-})();
-
-// RSVP: opens the guest's email app with their reply filled in
-(function rsvp() {
-  const form = document.getElementById("rsvp-form");
-  const status = form.querySelector(".form-status");
-
-  form.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const data = new FormData(form);
-    const name = (data.get("name") || "").trim();
-    const attending = data.get("attending");
-
-    if (!name || !attending) {
-      status.textContent = "Please add your name and let us know if you can come.";
-      return;
-    }
-
-    const body = [
-      `Name: ${name}`,
-      `Reply: ${attending}`,
-      `Guests: ${data.get("guests") || 1}`,
-      data.get("message") ? `Note: ${data.get("message")}` : "",
-    ].filter(Boolean).join("\n");
-
-    const subject = `RSVP from ${name}`;
-    window.location.href =
-      `mailto:${form.dataset.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    status.textContent = "Thank you! Your email app should open to send your reply.";
-  });
 })();
