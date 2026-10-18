@@ -7,10 +7,11 @@ and `assets/`. Open `index.html` in a browser to preview it. Vercel deploys it a
 Guests land on the card in a vellum sleeve tied with a raw-edged chiffon ribbon and
 bow like the printed card. Each piece of the bow is a painted image in
 `assets/ribbon/` (made by `python3 tools/make_ribbon.py`) that `script.js` moves on a
-canvas. Tapping the bow unties it: the loops slip
-through the knot, the ribbon falls away, and the full invitation pops up out of the
-sleeve over a softly animated gold background, followed by a countdown and the
-ceremony and reception details with map and calendar links.
+canvas. As the page loads the bow unties by itself: the
+loops slip through the knot, the ribbon falls away, and the full invitation pops up
+out of the sleeve over a softly animated gold background. The page then glides down
+once through the countdown and the ceremony and reception details (with map and
+calendar links); any touch, wheel or key stops it so guests can scroll themselves.
 
 All wording lives in `index.html`. The countdown date is `data-date` on `#countdown`.
 
@@ -18,4 +19,5 @@ The background music (`assets/music.mp3`) is an original piano arrangement of
 Pachelbel's Canon in D, a public-domain piece, synthesised by
 `tools/compose_music.py`, so it is free of copyright. To regenerate it:
 `python3 tools/compose_music.py music.wav && ffmpeg -i music.wav -b:a 128k assets/music.mp3`.
-It starts when a guest opens the card and can be paused with the music button.
+It fades in as the card opens (or at the guest's first touch, if the browser
+blocks sound until then) and can be paused with the music button.
