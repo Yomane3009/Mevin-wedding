@@ -8,11 +8,14 @@ function createRibbon(canvas) {
   // every image shares one frame around the knot, in sleeve widths
   const FRAME = { x: -0.56, y: -0.32, w: 1.12, h: 0.8 };
   const pieces = {};
+  const loading = [];
   for (const name of ["band-left", "band-right", "tail-left", "tail-right", "loop-left", "loop-right", "knot"]) {
     const img = new Image();
     img.src = `assets/ribbon/${name}.webp`;
     pieces[name] = img;
+    loading.push(img.decode().catch(() => {}));
   }
+  const ready = Promise.all(loading);
   let W = 0; // sleeve width in CSS px; everything is sized from it
   let K = { x: 0, y: 0 };
 
@@ -84,10 +87,11 @@ function createRibbon(canvas) {
   }
 
   resize();
-  return { draw, resize };
+  return { draw, resize, ready };
 }
 
-// Opening: tap the bow, the ribbon unties and falls away, then the invitation pops up
+// Opening: the ribbon unties by itself and falls away, the invitation pops up, and the
+// page glides down through the details
 (function opening() {
   const wrap = document.getElementById("card-wrap");
   const card = wrap.querySelector(".card");
@@ -132,7 +136,6 @@ function createRibbon(canvas) {
   async function open() {
     if (started) return;
     started = true;
-    // called from the guest's tap, so the browser allows the music to start here
     window.dispatchEvent(new Event("invitation:open"));
     wrap.classList.add("untying");
     const speed = reduceMotion ? 0 : 1;
@@ -198,25 +201,40 @@ function createRibbon(canvas) {
     pop.finished.then(() => {
       card.style.transformOrigin = "";
       document.body.classList.remove("sealed");
+      if (!reduceMotion) setTimeout(tour, 1400);
     });
   }
 
-  wrap.addEventListener("click", (event) => {
-    // links on the card only work once it is out of the sleeve
-    if (!opened) event.preventDefault();
-    open();
-  });
-
-  document.getElementById("open-btn").addEventListener("keydown", (event) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      open();
-    }
-  });
+  // Scroll gently to the end of the page so guests see everything once; any touch,
+  // wheel or key hands control back to them
+  function tour() {
+    const from = window.scrollY;
+    const distance = document.documentElement.scrollHeight - window.innerHeight - from;
+    if (distance <= 0) return;
+    const duration = Math.min(22000, Math.max(7000, distance * 7));
+    const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+    const start = performance.now();
+    let stopped = false;
+    const events = ["wheel", "touchstart", "pointerdown", "keydown"];
+    const stop = () => {
+      stopped = true;
+      events.forEach((e) => window.removeEventListener(e, stop));
+    };
+    events.forEach((e) => window.addEventListener(e, stop, { passive: true }));
+    (function step(now) {
+      if (stopped) return;
+      const t = Math.min(1, (now - start) / duration);
+      window.scrollTo({ top: from + distance * ease(t), behavior: "instant" });
+      if (t < 1) requestAnimationFrame(step);
+      else stop();
+    })(start);
+  }
 
   measure();
   window.addEventListener("resize", () => { if (!started) measure(); });
-  if (document.fonts) document.fonts.ready.then(measure);
+  // open on its own once the ribbon and fonts are in, after a moment to see it tied
+  Promise.all([ribbon.ready, document.fonts ? document.fonts.ready : null])
+    .then(() => { measure(); setTimeout(open, 1200); });
 })();
 
 // Countdown to the wedding date set on #countdown[data-date]
@@ -382,7 +400,8 @@ function createRibbon(canvas) {
   }
 })();
 
-// Soft background music: starts with the opening tap, fades in, and can be paused
+// Soft background music: fades in as the card opens, and can be paused. Browsers only
+// allow sound after the guest touches the page, so it waits for that if it has to.
 (function music() {
   const audio = document.getElementById("music");
   const toggle = document.getElementById("music-toggle");
@@ -408,8 +427,17 @@ function createRibbon(canvas) {
   function play() {
     audio.volume = 0;
     const started = audio.play();
-    if (started) started.catch(() => setState(false));
+    if (started) started.catch(waitForTouch);
     fadeTo(VOLUME, 3000);
+  }
+
+  function waitForTouch() {
+    const events = ["pointerdown", "touchend", "keydown"];
+    const go = () => {
+      events.forEach((e) => window.removeEventListener(e, go, true));
+      if (toggle.getAttribute("aria-pressed") === "true") play();
+    };
+    events.forEach((e) => window.addEventListener(e, go, true));
   }
 
   function setState(on) {

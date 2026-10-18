@@ -187,7 +187,6 @@ body {
 .pocket-back,
 .vellum,
 .ribbon,
-.open-hint { display: none; }
 
 .js .pocket {
   position: relative;
@@ -266,26 +265,6 @@ body {
   height: 255cqw;
 }
 
-.js .open-hint {
-  display: block;
-  margin: 1.4rem auto 0;
-  padding: 0.55rem 1.4rem;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 99px;
-  background: rgba(110, 76, 30, 0.22);
-  color: #fffaf0;
-  text-shadow: 0 1px 2px rgba(90, 60, 20, 0.4);
-  font: italic 1rem var(--serif);
-  letter-spacing: 0.05em;
-  cursor: pointer;
-  animation: pulse 2.2s ease-in-out infinite;
-  transition: opacity 0.4s;
-}
-
-.js .card-wrap { cursor: pointer; }
-.js .card-wrap.untying .open-hint { opacity: 0; animation: none; }
-
-.opened .open-hint { display: none; }
 .js .card-wrap.opened { cursor: default; touch-action: auto; -webkit-user-select: auto; user-select: auto; }
 
 .scroll-cue {
@@ -467,11 +446,6 @@ main section {
   100% { transform: translate(-4%, 3%) scale(1); }
 }
 
-@keyframes pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.25); }
-  50% { box-shadow: 0 0 0 8px rgba(255, 255, 255, 0); }
-}
-
 @keyframes bob {
   0%, 100% { transform: translate(-50%, 0) rotate(45deg); }
   50% { transform: translate(-50%, 6px) rotate(45deg); }
@@ -479,6 +453,6 @@ main section {
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .open-hint, .scroll-cue, .stage::before, .music-toggle svg { animation: none !important; }
+  .scroll-cue, .stage::before, .music-toggle svg { animation: none !important; }
   .js .reveal { opacity: 1; transform: none; transition: none; }
 }
