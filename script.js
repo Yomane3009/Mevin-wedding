@@ -1,16 +1,104 @@
-// Opening: the card is pulled up out of its vellum sleeve, by tap or by dragging up
+// Raw-edged chiffon ribbon and bow, like the one on the printed card. Each piece is a
+// painted image (tools/make_ribbon.py) so the bow can be untied piece by piece.
+function createRibbon(canvas) {
+  const ctx = canvas.getContext("2d");
+  const paper = document.createElement("canvas");
+  const pctx = paper.getContext("2d");
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  // every image shares one frame around the knot, in sleeve widths
+  const FRAME = { x: -0.56, y: -0.32, w: 1.12, h: 0.8 };
+  const pieces = {};
+  for (const name of ["band-left", "band-right", "tail-left", "tail-right", "loop-left", "loop-right", "knot"]) {
+    const img = new Image();
+    img.src = `assets/ribbon/${name}.webp`;
+    pieces[name] = img;
+  }
+  let W = 0; // sleeve width in CSS px; everything is sized from it
+  let K = { x: 0, y: 0 };
+
+  function resize() {
+    const rect = canvas.getBoundingClientRect();
+    const sleeve = canvas.closest(".pocket");
+    W = sleeve.clientWidth;
+    K = { x: W * 0.45 + W * 0.5, y: W * 0.2 + sleeve.clientHeight * 0.5 };
+    for (const c of [canvas, paper]) {
+      c.width = Math.round(rect.width * dpr);
+      c.height = Math.round(rect.height * dpr);
+    }
+  }
+
+  const clamp01 = (v) => Math.max(0, Math.min(1, v));
+  const ease = (t) => t * t * (3 - 2 * t);
+
+  // Draw one piece turned and scaled about the knot, then moved
+  function piece(name, { scale = 1, turn = 0, dx = 0, dy = 0, alpha = 1 } = {}) {
+    const img = pieces[name];
+    if (!img.complete || !img.naturalWidth || alpha <= 0) return;
+    pctx.save();
+    pctx.globalAlpha = alpha;
+    pctx.translate(K.x + dx, K.y + dy);
+    pctx.rotate(turn);
+    pctx.scale(scale, scale);
+    pctx.drawImage(img, FRAME.x * W, FRAME.y * W, FRAME.w * W, FRAME.h * W);
+    pctx.restore();
+  }
+
+  function draw(u, time) {
+    pctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    pctx.clearRect(0, 0, paper.width, paper.height);
+    const sway = Math.sin(time / 1400);
+
+    // untying timeline
+    const pullRight = ease(clamp01(u / 0.4));        // right loop slips through the knot
+    const pullLeft = ease(clamp01((u - 0.18) / 0.4)); // then the left one
+    const loosen = ease(clamp01((u - 0.5) / 0.18));   // knot falls open
+    const fall = clamp01((u - 0.62) / 0.38);          // both halves slide off and drop
+
+    const side = (dir) => ({
+      dx: dir * (loosen * 0.025 + fall * 0.7) * W,
+      dy: (loosen * 0.015 + fall * fall * 1.1) * W,
+      turn: dir * fall * 0.7,
+    });
+    const left = side(-1);
+    const right = side(1);
+
+    piece("band-left", left);
+    piece("band-right", right);
+    // tails stretch as the loops are pulled through, and stir gently while tied
+    piece("tail-left", { ...left, scale: 1 + 0.3 * pullLeft, turn: left.turn + 0.025 * sway + 0.12 * pullLeft });
+    piece("tail-right", { ...right, scale: 1 + 0.3 * pullRight, turn: right.turn - 0.02 * sway - 0.12 * pullRight });
+    // loops shrink back into the knot and swing down as they slip through
+    piece("loop-left", { scale: 1 - 0.8 * pullLeft, turn: -0.5 * pullLeft, alpha: 1 - ease(clamp01((pullLeft - 0.5) / 0.5)) });
+    piece("loop-right", { scale: 1 - 0.8 * pullRight, turn: 0.5 * pullRight, alpha: 1 - ease(clamp01((pullRight - 0.5) / 0.5)) });
+    piece("knot", { scale: 1 - 0.4 * loosen, alpha: 1 - loosen });
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.globalAlpha = 1 - Math.pow(fall, 3);
+    ctx.shadowColor = "rgba(92, 62, 22, 0.1)";
+    ctx.shadowBlur = 6 * dpr;
+    ctx.shadowOffsetY = 2 * dpr;
+    ctx.drawImage(paper, 0, 0);
+    ctx.restore();
+  }
+
+  resize();
+  return { draw, resize };
+}
+
+// Opening: tap the bow, the ribbon unties and falls away, then the invitation pops up
 (function opening() {
   const wrap = document.getElementById("card-wrap");
   const card = wrap.querySelector(".card");
   const pin = card.querySelector(".pin");
+  const ribbon = createRibbon(document.getElementById("ribbon-canvas"));
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let progress = 0;
+  let untie = 0;
+  let started = false;
   let opened = false;
-  let animating = false;
-  let drag = null;
 
-  // How far the card rises: until the wedding date and church location clear the sleeve.
-  // --shrink eases the whole card back a little so the bow stays in view once it is out.
+  // How far the card rises out of the sleeve before it pops free
   function measure() {
     const width = wrap.clientWidth;
     const pull = pin.offsetTop + pin.offsetHeight + width * 0.04;
@@ -18,46 +106,67 @@
     const shrink = Math.min(1, (window.innerHeight - 16) / needed);
     wrap.style.setProperty("--pull", `${pull}px`);
     wrap.style.setProperty("--shrink", Math.max(0.82, shrink).toFixed(3));
+    ribbon.resize();
   }
 
-  function render(p) {
-    progress = p;
-    wrap.style.setProperty("--p", p.toFixed(4));
-    // a slight hand-held tilt while the card is in motion
-    wrap.style.setProperty("--tilt", (-2.2 * Math.sin(Math.PI * p)).toFixed(3));
+  // the ribbon breathes gently while tied, and is redrawn every frame while untying
+  (function loop(time) {
+    if (opened) return;
+    ribbon.draw(untie, time);
+    requestAnimationFrame(loop);
+  })(performance.now());
+
+  function tween(duration, step) {
+    return new Promise((resolve) => {
+      const start = performance.now();
+      function frame(now) {
+        const t = duration ? Math.max(0, Math.min(1, (now - start) / duration)) : 1;
+        step(t);
+        if (t < 1) requestAnimationFrame(frame);
+        else resolve();
+      }
+      requestAnimationFrame(frame);
+    });
   }
 
-  function settle(target, duration) {
-    const from = progress;
-    const start = performance.now();
-    const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-    animating = true;
-    function frame(now) {
-      const t = duration ? Math.min(1, (now - start) / duration) : 1;
-      render(from + (target - from) * ease(t));
-      if (t < 1) return requestAnimationFrame(frame);
-      animating = false;
-      if (target === 1) finish();
-    }
-    requestAnimationFrame(frame);
+  async function open() {
+    if (started) return;
+    started = true;
+    // called from the guest's tap, so the browser allows the music to start here
+    window.dispatchEvent(new Event("invitation:open"));
+    wrap.classList.add("untying");
+    const speed = reduceMotion ? 0 : 1;
+
+    await tween(2400 * speed, (t) => { untie = t; });
+
+    // the invitation rises out of the sleeve, then pops free
+    const ease = (t) => 1 - Math.pow(1 - t, 3);
+    await tween(900 * speed, (t) => {
+      const p = ease(t);
+      wrap.style.setProperty("--p", p.toFixed(4));
+      wrap.style.setProperty("--tilt", (-2 * Math.sin(Math.PI * p)).toFixed(3));
+    });
+    finish();
   }
 
-  // Once the card is out of the sleeve, the full invitation pops free and settles in the
-  // middle of the screen while the sleeve falls away
+  // The full invitation pops free and settles in the middle of the screen while the
+  // sleeve falls away behind it
   function finish() {
     opened = true;
     wrap.classList.add("opened");
     const revealed = document.getElementById("revealed");
-    const tilt = parseFloat(wrap.style.getPropertyValue("--tilt")) || 0;
     const from = card.getBoundingClientRect();
     const pocketTop = wrap.querySelector(".pocket").getBoundingClientRect().top;
     const sleeveTransform = getComputedStyle(wrap).transform;
 
-    // lift the sleeve out of the page flow exactly where it is
+    // lift the sleeve out of the page flow exactly where it is, in front of the card
+    // so the card visibly slides out from under the vellum
     const { offsetTop, offsetLeft, offsetWidth } = wrap;
     Object.assign(wrap.style, {
-      position: "absolute", margin: "0", top: `${offsetTop}px`, left: `${offsetLeft}px`, width: `${offsetWidth}px`,
+      position: "absolute", margin: "0", top: `${offsetTop}px`, left: `${offsetLeft}px`, width: `${offsetWidth}px`, zIndex: 3,
     });
+    wrap.querySelector(".pocket-back").style.display = "none";
+    wrap.querySelector(".ribbon").style.display = "none";
 
     revealed.appendChild(card);
     const to = card.getBoundingClientRect();
@@ -69,8 +178,8 @@
 
     card.style.transformOrigin = "50% 0";
     const pop = card.animate([
-      { transform: `translate(${dx}px, ${dy}px) scale(${scale}) rotate(${tilt}deg)` },
-      { transform: `translate(${dx * 0.6}px, ${dy - lift}px) scale(${scale * 1.02}) rotate(${tilt * 0.4}deg)`, offset: 0.38 },
+      { transform: `translate(${dx}px, ${dy}px) scale(${scale})` },
+      { transform: `translate(${dx * 0.6}px, ${dy - lift}px) scale(${scale * 1.02})`, offset: 0.38 },
       { transform: "translate(0, -6px) scale(1.035)", offset: 0.78 },
       { transform: "none" },
     ], { duration, easing: "cubic-bezier(0.45, 0, 0.2, 1)" });
@@ -78,7 +187,7 @@
     wrap.animate([
       { transform: sleeveTransform, opacity: 1 },
       { transform: `${sleeveTransform === "none" ? "" : sleeveTransform} translateY(140px)`, opacity: 0 },
-    ], { duration: duration * 0.6, delay: duration * 0.2, easing: "ease-in", fill: "forwards" })
+    ], { duration: duration * 0.4, delay: duration * 0.22, easing: "ease-in", fill: "forwards" })
       .finished.then(() => { wrap.style.display = "none"; });
 
     setTimeout(() => {
@@ -92,43 +201,10 @@
     });
   }
 
-  function open() {
-    if (opened || animating) return;
-    // called from the guest's tap, so the browser allows the music to start here
-    window.dispatchEvent(new Event("invitation:open"));
-    settle(1, reduceMotion ? 0 : 1800 * (1 - progress) + 200);
-  }
-
-  wrap.addEventListener("pointerdown", (event) => {
-    if (opened || animating) return;
-    drag = { y: event.clientY, start: progress, moved: false };
-    wrap.setPointerCapture(event.pointerId);
-    wrap.classList.add("dragging");
-  });
-
-  wrap.addEventListener("pointermove", (event) => {
-    if (!drag) return;
-    const dy = drag.y - event.clientY;
-    if (Math.abs(dy) > 6) drag.moved = true;
-    if (!drag.moved) return;
-    const pull = parseFloat(getComputedStyle(wrap).getPropertyValue("--pull")) || 1;
-    render(Math.max(0, Math.min(1, drag.start + dy / pull)));
-  });
-
-  function release() {
-    if (!drag) return;
-    const moved = drag.moved;
-    drag = null;
-    wrap.classList.remove("dragging");
-    if (!moved || progress > 0.2) open();
-    else settle(0, 300);
-  }
-  wrap.addEventListener("pointerup", release);
-  wrap.addEventListener("pointercancel", release);
-
-  // Links on the card only work once it is out of the sleeve
   wrap.addEventListener("click", (event) => {
+    // links on the card only work once it is out of the sleeve
     if (!opened) event.preventDefault();
+    open();
   });
 
   document.getElementById("open-btn").addEventListener("keydown", (event) => {
@@ -139,7 +215,7 @@
   });
 
   measure();
-  window.addEventListener("resize", () => { if (!opened && !progress) measure(); });
+  window.addEventListener("resize", () => { if (!started) measure(); });
   if (document.fonts) document.fonts.ready.then(measure);
 })();
 

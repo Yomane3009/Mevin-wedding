@@ -96,7 +96,6 @@ body {
   padding-top: calc(var(--p, 0) * var(--pull, 0px));
   transform-origin: 50% 0;
   transform: scale(calc(1 - var(--p, 0) * (1 - var(--shrink, 1))));
-  touch-action: none;
   -webkit-user-select: none;
   user-select: none;
 }
@@ -247,41 +246,24 @@ body {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 0 0 1px rgba(255, 255, 255, 0.6), 0 -1px 3px rgba(0, 0, 0, 0.12);
 }
 
-/* Chiffon ribbon, bow and a sprig of baby's breath tied across the sleeve */
+/* Raw-edged chiffon ribbon and bow tied across the sleeve, like the printed card.
+   The ribbon is drawn on a canvas that reaches past the sleeve so it can fall away. */
 .js .ribbon {
   display: block;
   position: absolute;
-  left: -1.5%;
-  right: -1.5%;
+  left: 0;
+  right: 0;
   top: 50%;
   height: 0;
   pointer-events: none;
 }
 
-.band {
+.ribbon-canvas {
   position: absolute;
-  left: 0;
-  top: -8cqw;
-  width: 100%;
-  height: 16cqw;
-}
-
-.sprig {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  width: 46%;
-  transform: translate(-46%, -88%) rotate(-6deg);
-  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.15));
-}
-
-.bow {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  width: 58%;
-  transform: translate(-50%, -40%);
-  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.18));
+  left: -45%;
+  top: -92.5cqw;
+  width: 190%;
+  height: 255cqw;
 }
 
 .js .open-hint {
@@ -300,10 +282,8 @@ body {
   transition: opacity 0.4s;
 }
 
-.js .open-hint::before { content: "\2191\00a0\00a0"; font-style: normal; }
-
-.js .card-wrap { cursor: grab; }
-.js .card-wrap.dragging { cursor: grabbing; }
+.js .card-wrap { cursor: pointer; }
+.js .card-wrap.untying .open-hint { opacity: 0; animation: none; }
 
 .opened .open-hint { display: none; }
 .js .card-wrap.opened { cursor: default; touch-action: auto; -webkit-user-select: auto; user-select: auto; }
