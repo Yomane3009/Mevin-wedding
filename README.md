@@ -4,8 +4,10 @@ Wedding invitation website for Alvin Pritish Prince and Mega Dolorus.
 A plain static site with no build step: `index.html`, `styles.css`, `script.js`
 and `assets/`. Open `index.html` in a browser to preview it. Vercel deploys it as-is.
 
-Guests land on the card in a vellum sleeve tied with a chiffon ribbon and bow
-(drawn live on a canvas in `script.js`). Tapping the bow unties it: the loops slip
+Guests land on the card in a vellum sleeve tied with a raw-edged chiffon ribbon and
+bow like the printed card. Each piece of the bow is a painted image in
+`assets/ribbon/` (made by `python3 tools/make_ribbon.py`) that `script.js` moves on a
+canvas. Tapping the bow unties it: the loops slip
 through the knot, the ribbon falls away, and the full invitation pops up out of the
 sleeve over a softly animated gold background, followed by a countdown and the
 ceremony and reception details with map and calendar links.
