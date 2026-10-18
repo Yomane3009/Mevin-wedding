@@ -5,7 +5,8 @@ A plain static site with no build step: `index.html`, `styles.css`, `script.js`
 and `assets/`. Open `index.html` in a browser to preview it. Vercel deploys it as-is.
 
 Guests land on the card wrapped in a vellum sleeve with a ribbon bow. Tapping it
-(or dragging it up) pulls the card up out of the sleeve to reveal the invitation, followed by a
+(or dragging it up) pulls the card up out of the sleeve; the full invitation then pops free and settles
+in place over a softly animated background (gold dust, petals and candle-light glow), followed by a
 countdown and the ceremony and reception details with map and calendar links.
 
 All wording lives in `index.html`. The countdown date is `data-date` on `#countdown`.
