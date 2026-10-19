@@ -461,84 +461,80 @@ function createRibbon(canvas) {
     start(backdrop);
     start(video);
   }
-
-  // when the guest turns the film's sound on, the background music steps aside
-  const sound = () => {
-    const on = !video.muted && !video.paused && video.volume > 0;
-    window.dispatchEvent(new Event(on ? "music:hold" : "music:release"));
-  };
-  ["volumechange", "play", "pause", "ended"].forEach((e) => video.addEventListener(e, sound));
 })();
 
-// Soft background music: fades in as the card opens, and can be paused. Browsers only
-// allow sound after the guest touches the page, so it waits for that if it has to.
-(function music() {
-  const audio = document.getElementById("music");
+// The film's own soundtrack is the site's music: it fades in as the card opens and the
+// note button turns it off and on. Browsers only allow sound once the guest has touched
+// the page, so until then the film plays silently and the sound comes in on that touch.
+(function sound() {
+  const film = document.getElementById("film");
   const toggle = document.getElementById("music-toggle");
-  const VOLUME = 0.4;
+  if (!film || !toggle) return;
+  const VOLUME = 0.8;
   let wanted = true;
   try { wanted = localStorage.getItem("music") !== "off"; } catch (e) {}
 
   let fade = 0;
   function fadeTo(target, ms, done) {
     const id = ++fade;
-    const from = audio.volume;
+    const from = film.volume;
     const start = performance.now();
     function step(now) {
       if (id !== fade) return; // a newer fade took over
       const t = Math.max(0, Math.min(1, (now - start) / ms));
-      audio.volume = Math.max(0, Math.min(1, from + (target - from) * t));
+      film.volume = Math.max(0, Math.min(1, from + (target - from) * t));
       if (t < 1) requestAnimationFrame(step);
       else if (done) done();
     }
     requestAnimationFrame(step);
   }
 
-  function play() {
-    audio.volume = 0;
-    const started = audio.play();
-    if (started) started.catch(waitForTouch);
-    fadeTo(VOLUME, 3000);
+  function setState(on) {
+    toggle.setAttribute("aria-pressed", String(on));
+    toggle.setAttribute("aria-label", on ? "Turn sound off" : "Turn sound on");
   }
 
-  function waitForTouch() {
+  function soundOn() {
+    film.volume = 0;
+    film.muted = false;
+    if (film.paused) film.play().catch(() => {});
+    fadeTo(VOLUME, 2500);
+  }
+
+  function soundOff() {
+    fadeTo(0, 400, () => { film.muted = true; });
+  }
+
+  function onFirstTouch() {
     const events = ["pointerdown", "touchend", "keydown"];
     const go = () => {
       events.forEach((e) => window.removeEventListener(e, go, true));
-      if (toggle.getAttribute("aria-pressed") === "true") play();
+      if (toggle.getAttribute("aria-pressed") === "true" && film.muted) soundOn();
     };
     events.forEach((e) => window.addEventListener(e, go, true));
-  }
-
-  function setState(on) {
-    toggle.setAttribute("aria-pressed", String(on));
-    toggle.setAttribute("aria-label", on ? "Pause music" : "Play music");
   }
 
   window.addEventListener("invitation:open", () => {
     toggle.hidden = false;
     setState(wanted);
-    if (wanted) play();
+    if (!wanted) return;
+    // unmuting before the guest has touched the page would make the browser stop the film
+    const touched = navigator.userActivation && navigator.userActivation.hasBeenActive;
+    if (touched) soundOn();
+    else onFirstTouch();
   }, { once: true });
-
-  // the engagement film can ask for quiet while its own sound is on
-  let held = false;
-  window.addEventListener("music:hold", () => {
-    if (held || audio.paused) return;
-    held = true;
-    fadeTo(0, 400, () => audio.pause());
-  });
-  window.addEventListener("music:release", () => {
-    if (!held) return;
-    held = false;
-    if (toggle.getAttribute("aria-pressed") === "true") play();
-  });
 
   toggle.addEventListener("click", () => {
     const on = toggle.getAttribute("aria-pressed") !== "true";
     setState(on);
     try { localStorage.setItem("music", on ? "on" : "off"); } catch (e) {}
-    if (on) play();
-    else fadeTo(0, 400, () => audio.pause());
+    if (on) soundOn();
+    else soundOff();
+  });
+
+  // the film's own controls can mute it too; keep the button in step
+  film.addEventListener("volumechange", () => {
+    if (fade && film.volume > 0 && film.volume < VOLUME) return; // mid-fade
+    setState(!film.muted && film.volume > 0);
   });
 })();
