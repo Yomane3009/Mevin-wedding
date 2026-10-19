@@ -90,14 +90,15 @@ function createRibbon(canvas) {
   return { draw, resize, ready };
 }
 
-// Opening: the ribbon unties by itself and falls away, the invitation pops up, and the
-// page glides down through the details
+// Opening: the guest taps the ribbon, it unties and falls away, the invitation pops up,
+// and the page glides down through the details. It runs the same for every guest,
+// including phones set to reduce motion (common on iPhones): skipping it there jumped
+// straight to the open card
 (function opening() {
   const wrap = document.getElementById("card-wrap");
   const card = wrap.querySelector(".card");
   const pin = card.querySelector(".pin");
   const ribbon = createRibbon(document.getElementById("ribbon-canvas"));
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let untie = 0;
   let started = false;
   let opened = false;
@@ -138,13 +139,12 @@ function createRibbon(canvas) {
     started = true;
     window.dispatchEvent(new Event("invitation:open"));
     wrap.classList.add("untying");
-    const speed = reduceMotion ? 0 : 1;
 
-    await tween(2400 * speed, (t) => { untie = t; });
+    await tween(2400, (t) => { untie = t; });
 
     // the invitation rises out of the sleeve, then pops free
     const ease = (t) => 1 - Math.pow(1 - t, 3);
-    await tween(900 * speed, (t) => {
+    await tween(900, (t) => {
       const p = ease(t);
       wrap.style.setProperty("--p", p.toFixed(4));
       wrap.style.setProperty("--tilt", (-2 * Math.sin(Math.PI * p)).toFixed(3));
@@ -178,7 +178,7 @@ function createRibbon(canvas) {
     const dx = from.left + from.width / 2 - (to.left + to.width / 2);
     const dy = from.top - to.top;
     const lift = Math.min(from.height * 0.55, from.bottom - pocketTop + 24);
-    const duration = reduceMotion ? 0 : 1600;
+    const duration = 1600;
 
     card.style.transformOrigin = "50% 0";
     const pop = card.animate([
@@ -202,7 +202,7 @@ function createRibbon(canvas) {
     pop.finished.then(() => {
       card.style.transformOrigin = "";
       document.body.classList.remove("sealed");
-      if (!reduceMotion) setTimeout(tour, 1400);
+      setTimeout(tour, 1400);
     });
   }
 
@@ -258,9 +258,31 @@ function createRibbon(canvas) {
     sizeUnits();
     if (!started) measure();
   });
-  // open on its own once the ribbon and fonts are in, after a moment to see it tied
-  Promise.all([ribbon.ready, document.fonts ? document.fonts.ready : null])
-    .then(() => { measure(); setTimeout(open, 1200); });
+  // The guest opens it: a tap on the ribbon (or anywhere on the sleeve) unties it.
+  // That tap also counts as permission for sound, so the music starts with the opening.
+  const hint = document.getElementById("open-hint");
+  let ready = false;
+  let asked = false;
+  function tap() {
+    if (started) return;
+    if (!ready) { asked = true; return; }
+    if (hint) hint.hidden = true;
+    wrap.removeAttribute("role");
+    wrap.removeAttribute("tabindex");
+    wrap.removeAttribute("aria-label");
+    open();
+  }
+  wrap.addEventListener("click", tap);
+  wrap.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") { event.preventDefault(); tap(); }
+  });
+  Promise.all([ribbon.ready, document.fonts ? document.fonts.ready : null]).then(() => {
+    measure();
+    ready = true;
+    wrap.classList.add("ready");
+    if (asked) tap();
+    else if (hint) hint.hidden = false;
+  });
 })();
 
 // Countdown to the wedding date set on #countdown[data-date]
@@ -321,7 +343,6 @@ function createRibbon(canvas) {
   const canvas = document.getElementById("ambience");
   const stage = canvas.parentElement;
   const ctx = canvas.getContext("2d");
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   let width = 0;
   let height = 0;
@@ -370,7 +391,6 @@ function createRibbon(canvas) {
   }
 
   window.addEventListener("invitation:pop", (event) => {
-    if (reduceMotion) return;
     const box = stage.getBoundingClientRect();
     const cx = event.detail.x - box.left;
     const cy = event.detail.y - box.top;
@@ -432,21 +452,20 @@ function createRibbon(canvas) {
     requestAnimationFrame(frame);
   }
 
-  if (!reduceMotion) {
-    new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; }).observe(stage);
-    requestAnimationFrame(frame);
-  }
+  new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; }).observe(stage);
+  requestAnimationFrame(frame);
 })();
 
-// Engagement film: plays on a loop the whole time, with a small blurred copy running
-// behind the page. The backdrop follows the framed film, and seeking or pausing the
-// film moves the backdrop with it.
+// Engagement film: starts as the invitation opens and plays once, with a small blurred
+// copy running behind the page. The backdrop follows the framed film, and seeking or
+// pausing the film moves the backdrop with it. When it ends, a button offers a replay.
 (function film() {
   const video = document.getElementById("film");
   const backdrop = document.getElementById("film-bg");
+  const replay = document.getElementById("film-replay");
   if (!video || !backdrop) return;
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let userPaused = reduceMotion;
+  let running = false;
+  let userPaused = false;
   let syncing = false;
 
   const start = (v) => v.play().catch(() => {});
@@ -461,7 +480,7 @@ function createRibbon(canvas) {
   });
   video.addEventListener("pause", () => {
     // browsers pause muted films that scroll off screen; only a guest's pause counts
-    if (document.visibilityState !== "visible" || syncing) return;
+    if (video.ended || document.visibilityState !== "visible" || syncing) return;
     const rect = video.getBoundingClientRect();
     if (rect.bottom > 0 && rect.top < window.innerHeight) {
       userPaused = true;
@@ -469,15 +488,31 @@ function createRibbon(canvas) {
     }
   });
   video.addEventListener("play", () => {
+    running = true;
     userPaused = false;
+    if (replay) replay.hidden = true;
+    if (backdrop.ended || Math.abs(backdrop.currentTime - video.currentTime) > 1) {
+      backdrop.currentTime = video.currentTime;
+    }
     if (backdrop.paused) start(backdrop);
   });
+  video.addEventListener("ended", () => {
+    backdrop.pause();
+    if (replay) replay.hidden = false;
+  });
+  if (replay) {
+    replay.addEventListener("click", () => {
+      video.currentTime = 0;
+      backdrop.currentTime = 0;
+      start(video);
+    });
+  }
 
-  // keep both running and in step: big gaps jump, small drift is eased out by
-  // nudging the backdrop's speed so nothing visibly skips
+  // keep both running and in step while the film plays: big gaps jump, small drift is
+  // eased out by nudging the backdrop's speed so nothing visibly skips
   setInterval(() => {
-    if (userPaused || document.visibilityState !== "visible") return;
-    if (backdrop.paused) start(backdrop);
+    if (!running || userPaused || video.ended || document.visibilityState !== "visible") return;
+    if (backdrop.paused && !backdrop.ended) start(backdrop);
     if (video.paused) start(video);
     if (backdrop.readyState < 2 || video.readyState < 2) return;
     const drift = video.currentTime - backdrop.currentTime;
@@ -490,15 +525,11 @@ function createRibbon(canvas) {
     }
   }, 250);
 
-  if (reduceMotion) {
-    video.removeAttribute("autoplay");
-    backdrop.removeAttribute("autoplay");
-    video.pause();
-    backdrop.pause();
-  } else {
+  window.addEventListener("invitation:open", () => {
+    running = true;
     start(backdrop);
     start(video);
-  }
+  }, { once: true });
 })();
 
 // The film's own soundtrack is the site's music: it fades in as the card opens and the
@@ -607,4 +638,83 @@ function createRibbon(canvas) {
     ourMute = film.muted;
     setState(!film.muted);
   });
+})();
+
+// RSVP: sends the guest's reply to the Google Sheet behind data-endpoint
+// (tools/rsvp-sheet.gs). A reply already sent from this phone is remembered.
+(function rsvp() {
+  const section = document.getElementById("rsvp");
+  const form = document.getElementById("rsvp-form");
+  if (!section || !form) return;
+  const endpoint = section.dataset.endpoint;
+  if (!endpoint) return; // not set up yet: keep the section hidden
+  section.hidden = false;
+  const status = document.getElementById("rsvp-status");
+  const guests = document.getElementById("rsvp-guests");
+  const button = form.querySelector("button");
+  const done = document.getElementById("rsvp-done");
+
+  function thank(name) {
+    form.hidden = true;
+    done.hidden = false;
+    done.querySelector(".rsvp-thanks").textContent = name ? `Thank you, ${name.split(/\s+/)[0]}!` : "Thank you!";
+  }
+
+  // someone else on the same phone (or a change of plans) can send a fresh reply
+  done.querySelector("button").addEventListener("click", () => {
+    try { localStorage.removeItem("rsvp"); } catch (e) {}
+    form.reset();
+    guests.hidden = false;
+    button.disabled = false;
+    status.textContent = "";
+    done.hidden = true;
+    form.hidden = false;
+    form.elements.name.focus();
+  });
+
+  form.addEventListener("input", () => { status.textContent = ""; });
+
+  // the head count only matters for guests who are coming
+  form.addEventListener("change", () => {
+    const choice = form.elements.attending.value;
+    guests.hidden = choice === "Sorry, can't make it";
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const name = form.elements.name.value.trim();
+    const attending = form.elements.attending.value;
+    status.classList.remove("error");
+    if (!name || !attending) {
+      status.textContent = !name ? "Please tell us your name." : "Please let us know if you can come.";
+      status.classList.add("error");
+      return;
+    }
+    if (form.elements.website.value) return thank(name);
+
+    const data = new URLSearchParams({
+      name,
+      attending,
+      guests: attending === "Sorry, can't make it" ? "0" : form.elements.guests.value,
+      message: form.elements.message.value.trim(),
+    });
+    button.disabled = true;
+    status.textContent = "Sending…";
+    try {
+      // Google's script answers from another site, so the reply can't be read;
+      // reaching it at all means the row was written
+      await fetch(endpoint, { method: "POST", mode: "no-cors", body: data });
+      try { localStorage.setItem("rsvp", name); } catch (e) {}
+      thank(name);
+    } catch (e) {
+      button.disabled = false;
+      status.textContent = "That didn't go through. Please check your connection and try again.";
+      status.classList.add("error");
+    }
+  });
+
+  try {
+    const sent = localStorage.getItem("rsvp");
+    if (sent) thank(sent);
+  } catch (e) {}
 })();
