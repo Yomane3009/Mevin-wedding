@@ -12,5 +12,5 @@ Differences from the main site:
 - Reception at Sri Sai Vivaha Mahal, Uppilipalayam, Coimbatore, 6.30 PM onwards.
 - Its own share thumbnail, `assets/share.jpg`.
 
-RSVPs go to a separate Google Sheet: set up `tools/rsvp-sheet.gs` in a new sheet and put
-its /exec URL in data-endpoint on #rsvp in `index.html`. The form stays hidden until then.
+RSVPs go to the same Google Sheet as the main site, on their own "Coimbatore RSVPs" tab
+(the form sends site=coimbatore; see `tools/rsvp-sheet.gs`).

@@ -697,6 +697,7 @@ function createRibbon(canvas) {
       attending,
       guests: attending === "Sorry, can't make it" ? "0" : form.elements.guests.value,
       message: form.elements.message.value.trim(),
+      site: "coimbatore", // the sheet keeps these on their own tab
     });
     button.disabled = true;
     status.textContent = "Sending…";

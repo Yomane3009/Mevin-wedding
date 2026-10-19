@@ -6,14 +6,19 @@
 // 2. Replace the code there with this file and save.
 // 3. Deploy > New deployment > type "Web app".
 //    Execute as: Me. Who has access: Anyone. Deploy and allow access.
-// 4. Copy the web app URL (it ends in /exec) into data-endpoint on #rsvp in index.html.
+// 4. Copy the web app URL (it ends in /exec) into data-endpoint on #rsvp in index.html
+//    (and in coimbatore/index.html; both sites use the same URL).
+// After changing this file: Deploy > Manage deployments > edit (pencil) > Version:
+// New version > Deploy. That keeps the same URL.
 
 const HEADERS = ["Received", "Name", "Coming to", "Guests", "Note"];
 
 function doPost(e) {
   const p = (e && e.parameter) || {};
   const book = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = book.getSheetByName("RSVPs") || book.insertSheet("RSVPs");
+  // the Coimbatore site sends site=coimbatore and gets a tab of its own
+  const tab = p.site === "coimbatore" ? "Coimbatore RSVPs" : "RSVPs";
+  const sheet = book.getSheetByName(tab) || book.insertSheet(tab);
   if (sheet.getLastRow() === 0) {
     sheet.appendRow(HEADERS);
     sheet.setFrozenRows(1);
