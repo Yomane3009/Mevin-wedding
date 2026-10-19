@@ -448,6 +448,14 @@ main .highlights { background: transparent; }
 
 .footer .script { font-size: 2.6rem; }
 
+.footer .credit {
+  margin-top: 2.2rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  opacity: 0.85;
+}
+
 /* Sound on/off for the film soundtrack */
 .music-toggle {
   position: fixed;
