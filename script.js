@@ -400,46 +400,67 @@ function createRibbon(canvas) {
   }
 })();
 
-// Engagement film: plays quietly while on screen, and paints a small copy of each frame
-// behind itself so the blurred gold background always matches the film exactly
+// Engagement film: plays on a loop the whole time, with a small blurred copy running
+// behind the page. The backdrop follows the framed film, and seeking or pausing the
+// film moves the backdrop with it.
 (function film() {
   const video = document.getElementById("film");
-  const canvas = document.getElementById("film-bg");
-  if (!video || !canvas) return;
-  const ctx = canvas.getContext("2d");
-  canvas.width = 160;
-  canvas.height = 90;
+  const backdrop = document.getElementById("film-bg");
+  if (!video || !backdrop) return;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let userPaused = reduceMotion;
+  let syncing = false;
 
-  const poster = new Image();
-  poster.onload = () => { if (video.readyState < 2) ctx.drawImage(poster, 0, 0, canvas.width, canvas.height); };
-  poster.src = video.poster;
-
-  function paint() {
-    if (video.readyState >= 2) ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const start = (v) => v.play().catch(() => {});
+  function align() {
+    syncing = true;
+    video.currentTime = backdrop.currentTime;
   }
-  if ("requestVideoFrameCallback" in video) {
-    const onFrame = () => { paint(); video.requestVideoFrameCallback(onFrame); };
-    video.requestVideoFrameCallback(onFrame);
+
+  video.addEventListener("seeked", () => {
+    if (syncing) { syncing = false; return; }
+    backdrop.currentTime = video.currentTime; // the guest moved the film
+  });
+  video.addEventListener("pause", () => {
+    // browsers pause muted films that scroll off screen; only a guest's pause counts
+    if (document.visibilityState !== "visible" || syncing) return;
+    const rect = video.getBoundingClientRect();
+    if (rect.bottom > 0 && rect.top < window.innerHeight) {
+      userPaused = true;
+      backdrop.pause();
+    }
+  });
+  video.addEventListener("play", () => {
+    userPaused = false;
+    if (backdrop.paused) start(backdrop);
+  });
+
+  // keep both running and in step: big gaps jump, small drift is eased out by
+  // nudging the backdrop's speed so nothing visibly skips
+  setInterval(() => {
+    if (userPaused || document.visibilityState !== "visible") return;
+    if (backdrop.paused) start(backdrop);
+    if (video.paused) start(video);
+    if (backdrop.readyState < 2 || video.readyState < 2) return;
+    const drift = video.currentTime - backdrop.currentTime;
+    if (Math.abs(drift) > 1) {
+      if (video.paused) align();
+      else backdrop.currentTime = video.currentTime;
+      backdrop.playbackRate = 1;
+    } else {
+      backdrop.playbackRate = 1 + Math.max(-0.1, Math.min(0.1, drift * 0.5));
+    }
+  }, 250);
+
+  if (reduceMotion) {
+    video.removeAttribute("autoplay");
+    backdrop.removeAttribute("autoplay");
+    video.pause();
+    backdrop.pause();
   } else {
-    (function loop() {
-      if (!video.paused) paint();
-      requestAnimationFrame(loop);
-    })();
+    start(backdrop);
+    start(video);
   }
-  video.addEventListener("seeked", paint);
-  video.addEventListener("loadeddata", paint);
-
-  // start when it scrolls into view, rest when it leaves
-  let userPaused = false;
-  video.addEventListener("pause", () => { if (document.visibilityState === "visible" && onScreen) userPaused = true; });
-  video.addEventListener("play", () => { userPaused = false; });
-  let onScreen = false;
-  new IntersectionObserver(([entry]) => {
-    onScreen = entry.isIntersecting;
-    if (onScreen && !userPaused && !reduceMotion) video.play().catch(() => {});
-    if (!onScreen && !video.paused) { video.pause(); userPaused = false; }
-  }, { threshold: 0.5 }).observe(video);
 
   // when the guest turns the film's sound on, the background music steps aside
   const sound = () => {

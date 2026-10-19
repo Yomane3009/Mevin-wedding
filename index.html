@@ -16,6 +16,10 @@
   <script>document.documentElement.classList.add("js");</script>
 </head>
 <body class="sealed">
+  <!-- the engagement film, blurred and washed in gold, runs behind the whole page -->
+  <div class="film-backdrop" aria-hidden="true">
+    <video id="film-bg" src="assets/video/engagement-bg.mp4" poster="assets/video/engagement-poster.jpg" muted loop playsinline autoplay preload="auto"></video>
+  </div>
 
   <header class="stage">
     <canvas class="ambience" id="ambience" aria-hidden="true"></canvas>
@@ -107,11 +111,9 @@
     </section>
 
     <section class="highlights" id="highlights">
-      <!-- the same film, blurred and washed in gold, drawn frame by frame behind it -->
-      <canvas class="highlights-bg" id="film-bg" aria-hidden="true"></canvas>
       <h2 class="section-title reveal">Engagement highlights</h2>
       <div class="film reveal">
-        <video id="film" src="assets/video/engagement.mp4" poster="assets/video/engagement-poster.jpg" playsinline muted loop controls preload="metadata"></video>
+        <video id="film" src="assets/video/engagement.mp4" poster="assets/video/engagement-poster.jpg" playsinline muted loop autoplay controls preload="auto"></video>
       </div>
     </section>
   </main>
