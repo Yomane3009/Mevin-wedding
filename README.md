@@ -26,3 +26,6 @@ The film's own soundtrack is the site's music. It fades in as the card opens (or
 the guest's first tap, since browsers block sound until then; a "Tap anywhere for
 sound" hint shows until that tap) and the note button
 turns it off and on.
+
+A copy for Coimbatore guests, with a rose-gold theme and the Coimbatore reception,
+lives in `coimbatore/` (see its README).
