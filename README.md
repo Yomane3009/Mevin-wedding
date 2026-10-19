@@ -11,7 +11,8 @@ canvas. As the page loads the bow unties by itself: the
 loops slip through the knot, the ribbon falls away, and the full invitation pops up
 out of the sleeve over a softly animated gold background. The page then glides down
 once through the countdown and the ceremony and reception details (with map and
-calendar links); any touch, wheel or key stops it so guests can scroll themselves.
+calendar links); scrolling by hand stops it, but a tap does not, so tapping for sound
+leaves it running.
 
 The engagement highlight film (`assets/video/engagement.mp4`, re-encoded for the
 web) loops nonstop in a frame near the bottom. A small copy of it
@@ -22,5 +23,6 @@ framed film.
 All wording lives in `index.html`. The countdown date is `data-date` on `#countdown`.
 
 The film's own soundtrack is the site's music. It fades in as the card opens (or at
-the guest's first touch, since browsers block sound until then) and the note button
+the guest's first tap, since browsers block sound until then; a "Tap anywhere for
+sound" hint shows until that tap) and the note button
 turns it off and on.
