@@ -652,19 +652,25 @@ function createRibbon(canvas) {
   const status = document.getElementById("rsvp-status");
   const guests = document.getElementById("rsvp-guests");
   const button = form.querySelector("button");
+  const done = document.getElementById("rsvp-done");
 
   function thank(name) {
-    form.innerHTML = "";
-    const p = document.createElement("p");
-    p.className = "rsvp-thanks";
-    p.textContent = name ? `Thank you, ${name.split(/\s+/)[0]}!` : "Thank you!";
-    form.appendChild(p);
+    form.hidden = true;
+    done.hidden = false;
+    done.querySelector(".rsvp-thanks").textContent = name ? `Thank you, ${name.split(/\s+/)[0]}!` : "Thank you!";
   }
 
-  try {
-    const sent = localStorage.getItem("rsvp");
-    if (sent) return thank(sent);
-  } catch (e) {}
+  // someone else on the same phone (or a change of plans) can send a fresh reply
+  done.querySelector("button").addEventListener("click", () => {
+    try { localStorage.removeItem("rsvp"); } catch (e) {}
+    form.reset();
+    guests.hidden = false;
+    button.disabled = false;
+    status.textContent = "";
+    done.hidden = true;
+    form.hidden = false;
+    form.elements.name.focus();
+  });
 
   form.addEventListener("input", () => { status.textContent = ""; });
 
@@ -706,4 +712,9 @@ function createRibbon(canvas) {
       status.classList.add("error");
     }
   });
+
+  try {
+    const sent = localStorage.getItem("rsvp");
+    if (sent) thank(sent);
+  } catch (e) {}
 })();

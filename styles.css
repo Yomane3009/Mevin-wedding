@@ -523,6 +523,12 @@ main .highlights { background: transparent; }
 
 .rsvp-form .trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 
+.rsvp-done { text-align: center; }
+
+.rsvp-done[hidden], .rsvp-form[hidden] { display: none; }
+
+.rsvp-done p { margin: 0 0 1.2rem; }
+
 .rsvp-thanks {
   margin: 0;
   text-align: center;
