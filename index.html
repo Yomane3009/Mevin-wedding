@@ -116,6 +116,42 @@
         <video id="film" src="assets/video/engagement.mp4" poster="assets/video/engagement-poster.jpg" playsinline muted loop autoplay controls preload="auto"></video>
       </div>
     </section>
+
+    <!-- RSVP: answers go to a Google Sheet through tools/rsvp-sheet.gs. The section stays
+         hidden until data-endpoint holds that script's web app URL. -->
+    <section class="rsvp" id="rsvp" data-endpoint="" hidden>
+      <h2 class="section-title reveal">Will you join us?</h2>
+      <p class="rsvp-intro reveal">It would mean so much to have you with us. A quick reply helps us plan for everyone.</p>
+      <form class="rsvp-form reveal" id="rsvp-form" novalidate>
+        <label class="field">
+          <span>Your name</span>
+          <input name="name" type="text" autocomplete="name" maxlength="80" required>
+        </label>
+        <fieldset class="field">
+          <legend>Will you be able to come?</legend>
+          <div class="choices">
+            <label><input type="radio" name="attending" value="Wedding and reception" required> Wedding and reception</label>
+            <label><input type="radio" name="attending" value="Wedding only"> Wedding only</label>
+            <label><input type="radio" name="attending" value="Reception only"> Reception only</label>
+            <label><input type="radio" name="attending" value="Sorry, can't make it"> Sorry, I can't make it</label>
+          </div>
+        </fieldset>
+        <label class="field" id="rsvp-guests">
+          <span>How many of you will be coming, including you?</span>
+          <select name="guests">
+            <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option value="7+">7 or more</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>A note for Alvin &amp; Mega <small>(optional)</small></span>
+          <textarea name="message" rows="3" maxlength="500"></textarea>
+        </label>
+        <!-- left empty by people; bots that fill every field are ignored -->
+        <input class="trap" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button class="btn" type="submit">Send reply</button>
+        <p class="rsvp-status" id="rsvp-status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
   </main>
 
   <footer class="footer reveal">

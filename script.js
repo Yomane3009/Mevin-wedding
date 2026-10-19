@@ -595,3 +595,71 @@ function createRibbon(canvas) {
     setState(!film.muted);
   });
 })();
+
+// RSVP: sends the guest's reply to the Google Sheet behind data-endpoint
+// (tools/rsvp-sheet.gs). A reply already sent from this phone is remembered.
+(function rsvp() {
+  const section = document.getElementById("rsvp");
+  const form = document.getElementById("rsvp-form");
+  if (!section || !form) return;
+  const endpoint = section.dataset.endpoint;
+  if (!endpoint) return; // not set up yet: keep the section hidden
+  section.hidden = false;
+  const status = document.getElementById("rsvp-status");
+  const guests = document.getElementById("rsvp-guests");
+  const button = form.querySelector("button");
+
+  function thank(name) {
+    form.innerHTML = "";
+    const p = document.createElement("p");
+    p.className = "rsvp-thanks";
+    p.textContent = name ? `Thank you, ${name.split(/\s+/)[0]}!` : "Thank you!";
+    form.appendChild(p);
+  }
+
+  try {
+    const sent = localStorage.getItem("rsvp");
+    if (sent) return thank(sent);
+  } catch (e) {}
+
+  form.addEventListener("input", () => { status.textContent = ""; });
+
+  // the head count only matters for guests who are coming
+  form.addEventListener("change", () => {
+    const choice = form.elements.attending.value;
+    guests.hidden = choice === "Sorry, can't make it";
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const name = form.elements.name.value.trim();
+    const attending = form.elements.attending.value;
+    status.classList.remove("error");
+    if (!name || !attending) {
+      status.textContent = !name ? "Please tell us your name." : "Please let us know if you can come.";
+      status.classList.add("error");
+      return;
+    }
+    if (form.elements.website.value) return thank(name);
+
+    const data = new URLSearchParams({
+      name,
+      attending,
+      guests: attending === "Sorry, can't make it" ? "0" : form.elements.guests.value,
+      message: form.elements.message.value.trim(),
+    });
+    button.disabled = true;
+    status.textContent = "Sending…";
+    try {
+      // Google's script answers from another site, so the reply can't be read;
+      // reaching it at all means the row was written
+      await fetch(endpoint, { method: "POST", mode: "no-cors", body: data });
+      try { localStorage.setItem("rsvp", name); } catch (e) {}
+      thank(name);
+    } catch (e) {
+      button.disabled = false;
+      status.textContent = "That didn't go through. Please check your connection and try again.";
+      status.classList.add("error");
+    }
+  });
+})();

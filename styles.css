@@ -441,6 +441,95 @@ main .highlights { background: transparent; }
   background: #1d150b;
 }
 
+/* RSVP form */
+.rsvp-intro {
+  max-width: 34rem;
+  margin: -1rem auto 2rem;
+}
+
+.rsvp-form {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 24px rgba(58, 47, 42, 0.06);
+  text-align: left;
+}
+
+.field {
+  display: block;
+  margin: 0 0 1.4rem;
+  padding: 0;
+  border: 0;
+}
+
+.field[hidden] { display: none; }
+
+.field > span,
+.field legend {
+  display: block;
+  margin-bottom: 0.45rem;
+  padding: 0;
+  font-size: 0.95rem;
+}
+
+.field small { opacity: 0.7; }
+
+.field input[type="text"],
+.field select,
+.field textarea {
+  display: block;
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--navy);
+  font: 1rem var(--serif); /* 16px keeps iPhones from zooming in on focus */
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: 2px solid rgba(181, 133, 74, 0.45);
+  outline-offset: 1px;
+}
+
+.choices { display: grid; gap: 0.5rem; }
+
+.choices label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.choices label:has(input:checked) { background: rgba(181, 133, 74, 0.1); border-color: var(--gold); }
+
+.choices input { accent-color: var(--gold); width: 1.1rem; height: 1.1rem; margin: 0; }
+
+.rsvp-form .btn { width: 100%; cursor: pointer; font-family: var(--serif); }
+
+.rsvp-form .btn:disabled { opacity: 0.6; cursor: default; }
+
+.rsvp-status { margin: 1rem 0 0; text-align: center; min-height: 1.6em; }
+
+.rsvp-status.error { color: #9b3a2e; }
+
+.rsvp-form .trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+
+.rsvp-thanks {
+  margin: 0;
+  text-align: center;
+  font-family: var(--script);
+  font-size: 2rem;
+  color: var(--gold);
+}
+
 .footer {
   padding: 3rem 16px 3.5rem;
   text-align: center;
