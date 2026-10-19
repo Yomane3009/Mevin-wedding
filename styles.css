@@ -125,6 +125,9 @@ body {
 }
 
 /* The invitation card itself, scaled to its width like paper */
+/* Sizes that follow the card's width come twice: first through --cq, which script.js
+   sets in pixels only on iOS 15 and older, then in container units (cqw), which every
+   newer browser uses instead */
 .card {
   position: relative;
   background: var(--paper);
@@ -135,20 +138,20 @@ body {
 }
 
 .card p {
-  margin: 0 0 max(6px, 1.7cqw);
-  font-size: max(11px, 2.35cqw);
+  margin: 0 0 max(6px, calc(var(--cq) * 1.7)); margin: 0 0 max(6px, 1.7cqw);
+  font-size: max(11px, calc(var(--cq) * 2.35)); font-size: max(11px, 2.35cqw);
   line-height: 1.5;
 }
 
 .card b { font-weight: 600; }
 
-.card .lg { font-size: max(13px, 2.9cqw); }
+.card .lg { font-size: max(13px, calc(var(--cq) * 2.9)); font-size: max(13px, 2.9cqw); }
 
-.card .script.sm { font-size: max(20px, 4.6cqw); line-height: 1.2; }
+.card .script.sm { font-size: max(20px, calc(var(--cq) * 4.6)); font-size: max(20px, 4.6cqw); line-height: 1.2; }
 
 .card .name {
-  margin: max(4px, 1.5cqw) 0 max(2px, 1cqw);
-  font-size: max(30px, 7.6cqw);
+  margin: max(4px, calc(var(--cq) * 1.5)) 0 max(2px, calc(var(--cq) * 1)); margin: max(4px, 1.5cqw) 0 max(2px, 1cqw);
+  font-size: max(30px, calc(var(--cq) * 7.6)); font-size: max(30px, 7.6cqw);
   line-height: 1.15;
 }
 
@@ -156,29 +159,29 @@ body {
   display: block;
   width: 17%;
   height: auto;
-  margin: 0 auto 1.5cqw;
+  margin: 0 auto calc(var(--cq) * 1.5); margin: 0 auto 1.5cqw;
 }
 
-.card .verse { font-size: max(9px, 2.2cqw); }
-.card .verse span { padding-left: 14cqw; }
+.card .verse { font-size: max(9px, calc(var(--cq) * 2.2)); font-size: max(9px, 2.2cqw); }
+.card .verse span { padding-left: calc(var(--cq) * 14); padding-left: 14cqw; }
 
-.card .with { margin-top: max(10px, 3cqw); }
+.card .with { margin-top: max(10px, calc(var(--cq) * 3)); margin-top: max(10px, 3cqw); }
 
-.card .venue { margin-top: max(10px, 3cqw); }
+.card .venue { margin-top: max(10px, calc(var(--cq) * 3)); margin-top: max(10px, 3cqw); }
 
 .card .when {
-  font-size: max(12px, 2.75cqw);
+  font-size: max(12px, calc(var(--cq) * 2.75)); font-size: max(12px, 2.75cqw);
   letter-spacing: 0.02em;
 }
 
 .pin {
   display: inline-block;
-  margin-bottom: max(6px, 2cqw);
+  margin-bottom: max(6px, calc(var(--cq) * 2)); margin-bottom: max(6px, 2cqw);
   padding: 0.25em 0.9em;
   border: 1px solid var(--line);
   border-radius: 99px;
   color: var(--gold);
-  font-size: max(10px, 2.2cqw);
+  font-size: max(10px, calc(var(--cq) * 2.2)); font-size: max(10px, 2.2cqw);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   text-decoration: none;
@@ -192,20 +195,20 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2cqw;
-  margin: max(8px, 2.5cqw) 0 max(10px, 3cqw);
+  gap: calc(var(--cq) * 2); gap: 2cqw;
+  margin: max(8px, calc(var(--cq) * 2.5)) 0 max(10px, calc(var(--cq) * 3)); margin: max(8px, 2.5cqw) 0 max(10px, 3cqw);
   color: var(--gold);
-  font-size: max(12px, 3cqw);
+  font-size: max(12px, calc(var(--cq) * 3)); font-size: max(12px, 3cqw);
 }
 
 .heart-rule span {
-  width: 14cqw;
+  width: calc(var(--cq) * 14); width: 14cqw;
   height: 1px;
   background: var(--navy);
   opacity: 0.6;
 }
 
-.card .compliments { margin: max(10px, 3cqw) 0 0; }
+.card .compliments { margin: max(10px, calc(var(--cq) * 3)) 0 0; margin: max(10px, 3cqw) 0 0; }
 
 /* Vellum sleeve: the card sits in it and is pulled up out of the top */
 .pocket-back,
@@ -214,7 +217,7 @@ body {
 
 .js .pocket {
   position: relative;
-  height: 145cqw;
+  height: calc(var(--cq) * 145); height: 145cqw;
 }
 
 .js .pocket-back {
@@ -231,15 +234,15 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  top: -400cqw;
+  top: calc(var(--cq) * -400); top: -400cqw;
   overflow: hidden;
 }
 
 .js .slot .card {
   position: absolute;
-  left: 3cqw;
-  right: 3cqw;
-  top: calc(400cqw + 2.5cqw);
+  left: calc(var(--cq) * 3); left: 3cqw;
+  right: calc(var(--cq) * 3); right: 3cqw;
+  top: calc(calc(var(--cq) * 400) + calc(var(--cq) * 2.5)); top: calc(400cqw + 2.5cqw);
   box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.15);
   transform-origin: 50% 100%;
   transform: translateY(calc(var(--p, 0) * var(--pull, 0px) * -1)) rotate(calc(var(--tilt, 0) * 1deg));
@@ -284,9 +287,9 @@ body {
 .ribbon-canvas {
   position: absolute;
   left: -45%;
-  top: -92.5cqw;
+  top: calc(var(--cq) * -92.5); top: -92.5cqw;
   width: 190%;
-  height: 255cqw;
+  height: calc(var(--cq) * 255); height: 255cqw;
 }
 
 .js .card-wrap.opened { cursor: default; touch-action: auto; -webkit-user-select: auto; user-select: auto; }

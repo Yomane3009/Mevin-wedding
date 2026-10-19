@@ -172,6 +172,7 @@ function createRibbon(canvas) {
     wrap.querySelector(".ribbon").style.display = "none";
 
     revealed.appendChild(card);
+    sizeUnits();
     const to = card.getBoundingClientRect();
     const scale = from.width / to.width;
     const dx = from.left + from.width / 2 - (to.left + to.width / 2);
@@ -209,6 +210,7 @@ function createRibbon(canvas) {
   // hand (a swipe, the wheel or the keys) hands control back to them; a plain tap
   // does not, so tapping to turn the sound on leaves the tour running
   function tour() {
+    if (window.scrollY > 40) return; // the guest has already set off on their own
     const from = window.scrollY;
     const distance = document.documentElement.scrollHeight - window.innerHeight - from;
     if (distance <= 0) return;
@@ -217,8 +219,13 @@ function createRibbon(canvas) {
     const start = performance.now();
     let stopped = false;
     const events = ["wheel", "touchmove", "keydown"];
+    // the page scrolls smoothly for links; the tour moves it itself, frame by frame
+    // (older Safari does not know scrollTo's "instant", so switch the smoothing off)
+    const root = document.documentElement.style;
+    root.scrollBehavior = "auto";
     const stop = () => {
       stopped = true;
+      root.scrollBehavior = "";
       events.forEach((e) => window.removeEventListener(e, stop));
     };
     events.forEach((e) => window.addEventListener(e, stop, { passive: true }));
@@ -229,15 +236,28 @@ function createRibbon(canvas) {
       if (Math.abs(window.scrollY - expected) > 40) return stop();
       const t = Math.min(1, (now - start) / duration);
       expected = Math.round(from + distance * ease(t));
-      window.scrollTo({ top: expected, behavior: "instant" });
+      window.scrollTo(0, expected);
       expected = window.scrollY; // the browser may clamp or round it
       if (t < 1) requestAnimationFrame(step);
       else stop();
     })(start);
   }
 
+  // iOS 15 and older have no container units (cqw), so the card would fall apart;
+  // give them the same sizes in pixels through --cq (see styles.css)
+  function sizeUnits() {
+    if (window.CSS && CSS.supports("width: 1cqw")) return;
+    for (const el of [wrap, document.getElementById("revealed")]) {
+      el.style.setProperty("--cq", `${el.clientWidth / 100}px`);
+    }
+  }
+
+  sizeUnits();
   measure();
-  window.addEventListener("resize", () => { if (!started) measure(); });
+  window.addEventListener("resize", () => {
+    sizeUnits();
+    if (!started) measure();
+  });
   // open on its own once the ribbon and fonts are in, after a moment to see it tied
   Promise.all([ribbon.ready, document.fonts ? document.fonts.ready : null])
     .then(() => { measure(); setTimeout(open, 1200); });
@@ -482,16 +502,21 @@ function createRibbon(canvas) {
 })();
 
 // The film's own soundtrack is the site's music: it fades in as the card opens and the
-// note button turns it off and on. Browsers only allow sound once the guest has touched
-// the page, so until then the film plays silently and the sound comes in on that touch.
+// note button turns it off and on. Browsers only allow sound once the guest has tapped
+// the page, so until then the film plays silently and the sound comes in on that tap.
 (function sound() {
   const film = document.getElementById("film");
+  const backdrop = document.getElementById("film-bg");
   const toggle = document.getElementById("music-toggle");
   const hint = document.getElementById("sound-hint");
   if (!film || !toggle) return;
   const VOLUME = 0.8;
   let wanted = true;
   try { wanted = localStorage.getItem("music") !== "off"; } catch (e) {}
+  let on = wanted;
+  // what we last set, so a mute from the film's own controls can be told apart
+  let ourMute = film.muted;
+  const mute = (value) => { ourMute = value; film.muted = value; };
 
   let fade = 0;
   function fadeTo(target, ms, done) {
@@ -508,28 +533,49 @@ function createRibbon(canvas) {
     requestAnimationFrame(step);
   }
 
-  function setState(on) {
+  function setState(value) {
+    on = value;
     toggle.setAttribute("aria-pressed", String(on));
-    toggle.setAttribute("aria-label", on ? "Turn sound off" : "Turn sound on");
+    toggle.setAttribute("aria-label", value ? "Turn sound off" : "Turn sound on");
   }
 
+  // If the browser refuses the sound it pauses the film instead (Safari may do so a
+  // moment later), so put it back on mute, keep it playing and wait for a real tap
   function soundOn() {
     film.volume = 0;
-    film.muted = false;
-    if (film.paused) film.play().catch(() => {});
-    fadeTo(VOLUME, 2500);
+    mute(false);
+    const refused = () => {
+      if (!film.paused || film.muted || !on) return;
+      mute(true);
+      film.play().catch(() => {});
+      waitForTap();
+    };
+    film.play().then(() => {
+      if (on && !film.muted) fadeTo(VOLUME, 2500);
+      setTimeout(refused, 400);
+    }, refused);
   }
 
   function soundOff() {
-    fadeTo(0, 400, () => { film.muted = true; });
+    fadeTo(0, 400, () => mute(true));
   }
 
-  function onFirstTouch() {
-    const events = ["pointerdown", "touchend", "keydown"];
-    const go = () => {
+  // Only a finished tap (touchend), a click or a key counts as the guest's go-ahead.
+  // A touch that starts a swipe does not, and unmuting on it would stop the film.
+  let waiting = false;
+  function waitForTap() {
+    if (waiting) return;
+    waiting = true;
+    const events = ["touchend", "click", "keydown"];
+    const go = (event) => {
       events.forEach((e) => window.removeEventListener(e, go, true));
+      waiting = false;
       if (hint) hint.hidden = true;
-      if (toggle.getAttribute("aria-pressed") === "true" && film.muted) soundOn();
+      // Low Power Mode on iPhones holds even silent films until a tap
+      if (backdrop && backdrop.paused) backdrop.play().catch(() => {});
+      if (toggle.contains(event.target)) return; // the note button handles itself
+      if (on && film.muted) soundOn();
+      else if (film.paused) film.play().catch(() => {});
     };
     events.forEach((e) => window.addEventListener(e, go, true));
     // a gentle nudge, since nothing else tells the guest the film has sound
@@ -543,20 +589,22 @@ function createRibbon(canvas) {
     // unmuting before the guest has touched the page would make the browser stop the film
     const touched = navigator.userActivation && navigator.userActivation.hasBeenActive;
     if (touched) soundOn();
-    else onFirstTouch();
+    else waitForTap();
   }, { once: true });
 
   toggle.addEventListener("click", () => {
-    const on = toggle.getAttribute("aria-pressed") !== "true";
-    setState(on);
-    try { localStorage.setItem("music", on ? "on" : "off"); } catch (e) {}
-    if (on) soundOn();
+    // while the film waits silently for a first tap, tapping the note means "sound on"
+    const turnOn = !on || film.muted;
+    setState(turnOn);
+    try { localStorage.setItem("music", turnOn ? "on" : "off"); } catch (e) {}
+    if (turnOn) soundOn();
     else soundOff();
   });
 
   // the film's own controls can mute it too; keep the button in step
   film.addEventListener("volumechange", () => {
-    if (fade && film.volume > 0 && film.volume < VOLUME) return; // mid-fade
-    setState(!film.muted && film.volume > 0);
+    if (film.muted === ourMute) return;
+    ourMute = film.muted;
+    setState(!film.muted);
   });
 })();
