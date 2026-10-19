@@ -540,9 +540,3 @@ main .highlights { background: transparent; }
   0%, 100% { transform: translate(-50%, 0) rotate(45deg); }
   50% { transform: translate(-50%, 6px) rotate(45deg); }
 }
-
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  .scroll-cue, .stage::before, .music-toggle svg, .sound-hint { animation: none !important; }
-  .js .reveal { opacity: 1; transform: none; transition: none; }
-}

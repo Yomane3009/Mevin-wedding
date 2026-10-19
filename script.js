@@ -91,13 +91,13 @@ function createRibbon(canvas) {
 }
 
 // Opening: the ribbon unties by itself and falls away, the invitation pops up, and the
-// page glides down through the details
+// page glides down through the details. It runs the same for every guest, including phones set to
+// reduce motion (common on iPhones): skipping it there jumped straight to the open card
 (function opening() {
   const wrap = document.getElementById("card-wrap");
   const card = wrap.querySelector(".card");
   const pin = card.querySelector(".pin");
   const ribbon = createRibbon(document.getElementById("ribbon-canvas"));
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let untie = 0;
   let started = false;
   let opened = false;
@@ -138,13 +138,12 @@ function createRibbon(canvas) {
     started = true;
     window.dispatchEvent(new Event("invitation:open"));
     wrap.classList.add("untying");
-    const speed = reduceMotion ? 0 : 1;
 
-    await tween(2400 * speed, (t) => { untie = t; });
+    await tween(2400, (t) => { untie = t; });
 
     // the invitation rises out of the sleeve, then pops free
     const ease = (t) => 1 - Math.pow(1 - t, 3);
-    await tween(900 * speed, (t) => {
+    await tween(900, (t) => {
       const p = ease(t);
       wrap.style.setProperty("--p", p.toFixed(4));
       wrap.style.setProperty("--tilt", (-2 * Math.sin(Math.PI * p)).toFixed(3));
@@ -178,7 +177,7 @@ function createRibbon(canvas) {
     const dx = from.left + from.width / 2 - (to.left + to.width / 2);
     const dy = from.top - to.top;
     const lift = Math.min(from.height * 0.55, from.bottom - pocketTop + 24);
-    const duration = reduceMotion ? 0 : 1600;
+    const duration = 1600;
 
     card.style.transformOrigin = "50% 0";
     const pop = card.animate([
@@ -202,7 +201,7 @@ function createRibbon(canvas) {
     pop.finished.then(() => {
       card.style.transformOrigin = "";
       document.body.classList.remove("sealed");
-      if (!reduceMotion) setTimeout(tour, 1400);
+      setTimeout(tour, 1400);
     });
   }
 
@@ -321,7 +320,6 @@ function createRibbon(canvas) {
   const canvas = document.getElementById("ambience");
   const stage = canvas.parentElement;
   const ctx = canvas.getContext("2d");
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   let width = 0;
   let height = 0;
@@ -370,7 +368,6 @@ function createRibbon(canvas) {
   }
 
   window.addEventListener("invitation:pop", (event) => {
-    if (reduceMotion) return;
     const box = stage.getBoundingClientRect();
     const cx = event.detail.x - box.left;
     const cy = event.detail.y - box.top;
@@ -432,10 +429,8 @@ function createRibbon(canvas) {
     requestAnimationFrame(frame);
   }
 
-  if (!reduceMotion) {
-    new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; }).observe(stage);
-    requestAnimationFrame(frame);
-  }
+  new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; }).observe(stage);
+  requestAnimationFrame(frame);
 })();
 
 // Engagement film: plays on a loop the whole time, with a small blurred copy running
@@ -445,8 +440,7 @@ function createRibbon(canvas) {
   const video = document.getElementById("film");
   const backdrop = document.getElementById("film-bg");
   if (!video || !backdrop) return;
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let userPaused = reduceMotion;
+  let userPaused = false;
   let syncing = false;
 
   const start = (v) => v.play().catch(() => {});
@@ -490,15 +484,8 @@ function createRibbon(canvas) {
     }
   }, 250);
 
-  if (reduceMotion) {
-    video.removeAttribute("autoplay");
-    backdrop.removeAttribute("autoplay");
-    video.pause();
-    backdrop.pause();
-  } else {
-    start(backdrop);
-    start(video);
-  }
+  start(backdrop);
+  start(video);
 })();
 
 // The film's own soundtrack is the site's music: it fades in as the card opens and the
