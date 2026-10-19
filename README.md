@@ -13,6 +13,11 @@ out of the sleeve over a softly animated gold background. The page then glides d
 once through the countdown and the ceremony and reception details (with map and
 calendar links); any touch, wheel or key stops it so guests can scroll themselves.
 
+Near the bottom, the engagement highlight film (`assets/video/engagement.mp4`,
+re-encoded for the web) plays muted while on screen, over a blurred, gold-washed copy
+of itself that is painted from the film's own frames so the two always stay in sync.
+Turning the film's sound on pauses the background music.
+
 All wording lives in `index.html`. The countdown date is `data-date` on `#countdown`.
 
 The background music (`assets/music.mp3`) is an original piano arrangement of

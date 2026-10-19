@@ -400,6 +400,55 @@ function createRibbon(canvas) {
   }
 })();
 
+// Engagement film: plays quietly while on screen, and paints a small copy of each frame
+// behind itself so the blurred gold background always matches the film exactly
+(function film() {
+  const video = document.getElementById("film");
+  const canvas = document.getElementById("film-bg");
+  if (!video || !canvas) return;
+  const ctx = canvas.getContext("2d");
+  canvas.width = 160;
+  canvas.height = 90;
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const poster = new Image();
+  poster.onload = () => { if (video.readyState < 2) ctx.drawImage(poster, 0, 0, canvas.width, canvas.height); };
+  poster.src = video.poster;
+
+  function paint() {
+    if (video.readyState >= 2) ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  }
+  if ("requestVideoFrameCallback" in video) {
+    const onFrame = () => { paint(); video.requestVideoFrameCallback(onFrame); };
+    video.requestVideoFrameCallback(onFrame);
+  } else {
+    (function loop() {
+      if (!video.paused) paint();
+      requestAnimationFrame(loop);
+    })();
+  }
+  video.addEventListener("seeked", paint);
+  video.addEventListener("loadeddata", paint);
+
+  // start when it scrolls into view, rest when it leaves
+  let userPaused = false;
+  video.addEventListener("pause", () => { if (document.visibilityState === "visible" && onScreen) userPaused = true; });
+  video.addEventListener("play", () => { userPaused = false; });
+  let onScreen = false;
+  new IntersectionObserver(([entry]) => {
+    onScreen = entry.isIntersecting;
+    if (onScreen && !userPaused && !reduceMotion) video.play().catch(() => {});
+    if (!onScreen && !video.paused) { video.pause(); userPaused = false; }
+  }, { threshold: 0.5 }).observe(video);
+
+  // when the guest turns the film's sound on, the background music steps aside
+  const sound = () => {
+    const on = !video.muted && !video.paused && video.volume > 0;
+    window.dispatchEvent(new Event(on ? "music:hold" : "music:release"));
+  };
+  ["volumechange", "play", "pause", "ended"].forEach((e) => video.addEventListener(e, sound));
+})();
+
 // Soft background music: fades in as the card opens, and can be paused. Browsers only
 // allow sound after the guest touches the page, so it waits for that if it has to.
 (function music() {
@@ -450,6 +499,19 @@ function createRibbon(canvas) {
     setState(wanted);
     if (wanted) play();
   }, { once: true });
+
+  // the engagement film can ask for quiet while its own sound is on
+  let held = false;
+  window.addEventListener("music:hold", () => {
+    if (held || audio.paused) return;
+    held = true;
+    fadeTo(0, 400, () => audio.pause());
+  });
+  window.addEventListener("music:release", () => {
+    if (!held) return;
+    held = false;
+    if (toggle.getAttribute("aria-pressed") === "true") play();
+  });
 
   toggle.addEventListener("click", () => {
     const on = toggle.getAttribute("aria-pressed") !== "true";

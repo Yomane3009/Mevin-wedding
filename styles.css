@@ -390,6 +390,60 @@ main section {
 .btn.ghost { background: transparent; color: var(--navy); }
 .btn.ghost:hover, .btn.ghost:focus-visible { background: var(--navy); color: #fff; }
 
+/* Engagement film over a gold-washed, blurred copy of itself */
+.highlights {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--backdrop);
+}
+
+.highlights-bg {
+  position: absolute;
+  inset: -60px;
+  z-index: -2;
+  width: calc(100% + 120px);
+  height: calc(100% + 120px);
+  filter: blur(30px) saturate(0.9);
+}
+
+.highlights::before,
+.highlights::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* tint the colours towards champagne gold, then add a soft glow */
+.highlights::before { background: #c79d5c; mix-blend-mode: color; opacity: 0.55; }
+.highlights::after {
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(255, 244, 214, 0.35), transparent 65%),
+    linear-gradient(180deg, rgba(226, 198, 143, 0.45), rgba(179, 136, 72, 0.45));
+}
+
+.highlights .section-title { color: #fffaf0; text-shadow: 0 2px 10px rgba(90, 60, 20, 0.45); }
+
+.film {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 6px;
+  border: 1px solid rgba(255, 250, 240, 0.7);
+  border-radius: 10px;
+  background: rgba(255, 250, 240, 0.18);
+  box-shadow: 0 18px 50px rgba(80, 52, 16, 0.35);
+}
+
+.film video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 6px;
+  background: #1d150b;
+}
+
 .footer {
   padding: 3rem 16px 3.5rem;
   text-align: center;
