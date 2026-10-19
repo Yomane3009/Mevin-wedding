@@ -303,6 +303,9 @@ function createRibbon(canvas) {
   const rand = (a, b) => a + Math.random() * (b - a);
 
   function resize() {
+    // the mobile browser bar sliding in and out nudges the height while scrolling;
+    // rebuilding the canvas for that would blank it for a frame, so ignore small changes
+    if (stage.clientWidth === width && Math.abs(stage.clientHeight - height) < 120) return;
     width = stage.clientWidth;
     height = stage.clientHeight;
     canvas.width = width * dpr;
@@ -311,6 +314,19 @@ function createRibbon(canvas) {
   }
   resize();
   new ResizeObserver(resize).observe(stage);
+
+  // one soft glowing mote, drawn once and stamped for each speck of dust
+  // (a canvas shadow on every speck every frame is slow on phones)
+  const mote = document.createElement("canvas");
+  mote.width = mote.height = 32;
+  const mctx = mote.getContext("2d");
+  const glow = mctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+  glow.addColorStop(0, "rgba(255, 252, 240, 1)");
+  glow.addColorStop(0.25, "rgba(255, 249, 232, 0.85)");
+  glow.addColorStop(0.55, "rgba(255, 246, 220, 0.25)");
+  glow.addColorStop(1, "rgba(255, 246, 220, 0)");
+  mctx.fillStyle = glow;
+  mctx.fillRect(0, 0, 32, 32);
 
   const dust = Array.from({ length: 55 }, () => ({
     x: rand(0, width), y: rand(0, height), r: rand(0.6, 2.2),
@@ -349,15 +365,11 @@ function createRibbon(canvas) {
         if (d.y < -10) { d.y = height + 10; d.x = rand(0, width); }
         if (d.x < -10) d.x = width + 10;
         if (d.x > width + 10) d.x = -10;
-        const alpha = 0.25 + 0.45 * (0.5 + 0.5 * Math.sin(time / 900 + d.phase));
-        ctx.beginPath();
-        ctx.fillStyle = `rgba(255, 251, 238, ${alpha})`;
-        ctx.shadowColor = "rgba(255, 246, 220, 0.9)";
-        ctx.shadowBlur = 6;
-        ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.globalAlpha = 0.25 + 0.45 * (0.5 + 0.5 * Math.sin(time / 900 + d.phase));
+        const size = d.r * 2 + 8;
+        ctx.drawImage(mote, d.x - size / 2, d.y - size / 2, size, size);
       }
-      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
 
       for (let i = 0; i < petals.length; i++) {
         const p = petals[i];

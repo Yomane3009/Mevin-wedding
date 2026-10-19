@@ -15,8 +15,9 @@ calendar links); any touch, wheel or key stops it so guests can scroll themselve
 
 The engagement highlight film (`assets/video/engagement.mp4`, re-encoded for the
 web) loops nonstop in a frame near the bottom. A small copy of it
-(`engagement-bg.mp4`) runs blurred and washed in gold behind the whole page, kept in
-step with the framed film.
+(`engagement-bg.mp4`, made by `sh tools/make_backdrop.sh` with the blur and gold tint
+baked in so phones scroll smoothly) runs behind the whole page, kept in step with the
+framed film.
 
 All wording lives in `index.html`. The countdown date is `data-date` on `#countdown`.
 
