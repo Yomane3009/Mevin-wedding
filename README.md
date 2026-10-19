@@ -27,5 +27,5 @@ the guest's first tap, since browsers block sound until then; a "Tap anywhere fo
 sound" hint shows until that tap) and the note button
 turns it off and on.
 
-A copy for Coimbatore guests, with a rose-gold theme and the Coimbatore reception,
-lives in `coimbatore/` (see its README).
+The Coimbatore copy of the invitation lives in its own repo, Mevin-wedding-coimbatore.
+RSVPs from both sites go to one sheet (`tools/rsvp-sheet.gs`), on separate tabs.
