@@ -205,8 +205,9 @@ function createRibbon(canvas) {
     });
   }
 
-  // Scroll gently to the end of the page so guests see everything once; any touch,
-  // wheel or key hands control back to them
+  // Scroll gently to the end of the page so guests see everything once. Scrolling by
+  // hand (a swipe, the wheel or the keys) hands control back to them; a plain tap
+  // does not, so tapping to turn the sound on leaves the tour running
   function tour() {
     const from = window.scrollY;
     const distance = document.documentElement.scrollHeight - window.innerHeight - from;
@@ -215,16 +216,21 @@ function createRibbon(canvas) {
     const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
     const start = performance.now();
     let stopped = false;
-    const events = ["wheel", "touchstart", "pointerdown", "keydown"];
+    const events = ["wheel", "touchmove", "keydown"];
     const stop = () => {
       stopped = true;
       events.forEach((e) => window.removeEventListener(e, stop));
     };
     events.forEach((e) => window.addEventListener(e, stop, { passive: true }));
+    let expected = from;
     (function step(now) {
       if (stopped) return;
+      // the page moved somewhere we did not put it: the guest is scrolling
+      if (Math.abs(window.scrollY - expected) > 40) return stop();
       const t = Math.min(1, (now - start) / duration);
-      window.scrollTo({ top: from + distance * ease(t), behavior: "instant" });
+      expected = Math.round(from + distance * ease(t));
+      window.scrollTo({ top: expected, behavior: "instant" });
+      expected = window.scrollY; // the browser may clamp or round it
       if (t < 1) requestAnimationFrame(step);
       else stop();
     })(start);
@@ -481,6 +487,7 @@ function createRibbon(canvas) {
 (function sound() {
   const film = document.getElementById("film");
   const toggle = document.getElementById("music-toggle");
+  const hint = document.getElementById("sound-hint");
   if (!film || !toggle) return;
   const VOLUME = 0.8;
   let wanted = true;
@@ -521,9 +528,12 @@ function createRibbon(canvas) {
     const events = ["pointerdown", "touchend", "keydown"];
     const go = () => {
       events.forEach((e) => window.removeEventListener(e, go, true));
+      if (hint) hint.hidden = true;
       if (toggle.getAttribute("aria-pressed") === "true" && film.muted) soundOn();
     };
     events.forEach((e) => window.addEventListener(e, go, true));
+    // a gentle nudge, since nothing else tells the guest the film has sound
+    if (hint) hint.hidden = false;
   }
 
   window.addEventListener("invitation:open", () => {

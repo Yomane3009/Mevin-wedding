@@ -478,6 +478,36 @@ main .highlights { background: transparent; }
 }
 
 .music-toggle[hidden] { display: none; }
+
+/* Shown until the guest's first tap, which is when browsers allow sound */
+.sound-hint {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  z-index: 10;
+  padding: 0.5rem 1.1rem;
+  border: 1px solid rgba(255, 250, 240, 0.75);
+  border-radius: 99px;
+  background: #8a6430;
+  color: #fffaf0;
+  font: italic 0.9rem var(--serif);
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+  transform: translateX(-50%);
+  box-shadow: 0 6px 18px rgba(60, 40, 10, 0.25);
+  animation: hint-in 0.6s ease both, breathe 2.4s ease-in-out 0.6s infinite;
+  cursor: pointer;
+}
+
+.sound-hint[hidden] { display: none; }
+
+@keyframes hint-in {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+}
+
+@keyframes breathe {
+  50% { transform: translateX(-50%) scale(1.05); }
+}
 .music-toggle svg { width: 22px; height: 22px; }
 .music-toggle .mute-line { display: none; }
 .music-toggle[aria-pressed="false"] .mute-line { display: inline; }
@@ -510,6 +540,6 @@ main .highlights { background: transparent; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .scroll-cue, .stage::before, .music-toggle svg { animation: none !important; }
+  .scroll-cue, .stage::before, .music-toggle svg, .sound-hint { animation: none !important; }
   .js .reveal { opacity: 1; transform: none; transition: none; }
 }
