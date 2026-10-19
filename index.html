@@ -16,6 +16,10 @@
   <script>document.documentElement.classList.add("js");</script>
 </head>
 <body class="sealed">
+  <!-- the engagement film, blurred and washed in gold, runs behind the whole page -->
+  <div class="film-backdrop" aria-hidden="true">
+    <video id="film-bg" src="assets/video/engagement-bg.mp4" poster="assets/video/engagement-bg-poster.jpg" muted loop playsinline autoplay preload="auto"></video>
+  </div>
 
   <header class="stage">
     <canvas class="ambience" id="ambience" aria-hidden="true"></canvas>
@@ -105,6 +109,13 @@
         </article>
       </div>
     </section>
+
+    <section class="highlights" id="highlights">
+      <h2 class="section-title reveal">Engagement highlights</h2>
+      <div class="film reveal">
+        <video id="film" src="assets/video/engagement.mp4" poster="assets/video/engagement-poster.jpg" playsinline muted loop autoplay controls preload="auto"></video>
+      </div>
+    </section>
   </main>
 
   <footer class="footer reveal">
@@ -112,8 +123,7 @@
     <p>We look forward to celebrating with you.</p>
   </footer>
 
-  <audio id="music" src="assets/music.mp3" loop preload="auto"></audio>
-  <button class="music-toggle" id="music-toggle" type="button" aria-label="Pause music" aria-pressed="true" hidden>
+  <button class="music-toggle" id="music-toggle" type="button" aria-label="Turn sound off" aria-pressed="true" hidden>
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l10-2v12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="2.5" fill="currentColor"/><circle cx="16.5" cy="16" r="2.5" fill="currentColor"/><path class="mute-line" d="M4 4l16 16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
   </button>
 

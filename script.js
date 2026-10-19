@@ -303,6 +303,9 @@ function createRibbon(canvas) {
   const rand = (a, b) => a + Math.random() * (b - a);
 
   function resize() {
+    // the mobile browser bar sliding in and out nudges the height while scrolling;
+    // rebuilding the canvas for that would blank it for a frame, so ignore small changes
+    if (stage.clientWidth === width && Math.abs(stage.clientHeight - height) < 120) return;
     width = stage.clientWidth;
     height = stage.clientHeight;
     canvas.width = width * dpr;
@@ -311,6 +314,19 @@ function createRibbon(canvas) {
   }
   resize();
   new ResizeObserver(resize).observe(stage);
+
+  // one soft glowing mote, drawn once and stamped for each speck of dust
+  // (a canvas shadow on every speck every frame is slow on phones)
+  const mote = document.createElement("canvas");
+  mote.width = mote.height = 32;
+  const mctx = mote.getContext("2d");
+  const glow = mctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+  glow.addColorStop(0, "rgba(255, 252, 240, 1)");
+  glow.addColorStop(0.25, "rgba(255, 249, 232, 0.85)");
+  glow.addColorStop(0.55, "rgba(255, 246, 220, 0.25)");
+  glow.addColorStop(1, "rgba(255, 246, 220, 0)");
+  mctx.fillStyle = glow;
+  mctx.fillRect(0, 0, 32, 32);
 
   const dust = Array.from({ length: 55 }, () => ({
     x: rand(0, width), y: rand(0, height), r: rand(0.6, 2.2),
@@ -349,15 +365,11 @@ function createRibbon(canvas) {
         if (d.y < -10) { d.y = height + 10; d.x = rand(0, width); }
         if (d.x < -10) d.x = width + 10;
         if (d.x > width + 10) d.x = -10;
-        const alpha = 0.25 + 0.45 * (0.5 + 0.5 * Math.sin(time / 900 + d.phase));
-        ctx.beginPath();
-        ctx.fillStyle = `rgba(255, 251, 238, ${alpha})`;
-        ctx.shadowColor = "rgba(255, 246, 220, 0.9)";
-        ctx.shadowBlur = 6;
-        ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.globalAlpha = 0.25 + 0.45 * (0.5 + 0.5 * Math.sin(time / 900 + d.phase));
+        const size = d.r * 2 + 8;
+        ctx.drawImage(mote, d.x - size / 2, d.y - size / 2, size, size);
       }
-      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
 
       for (let i = 0; i < petals.length; i++) {
         const p = petals[i];
@@ -400,62 +412,141 @@ function createRibbon(canvas) {
   }
 })();
 
-// Soft background music: fades in as the card opens, and can be paused. Browsers only
-// allow sound after the guest touches the page, so it waits for that if it has to.
-(function music() {
-  const audio = document.getElementById("music");
+// Engagement film: plays on a loop the whole time, with a small blurred copy running
+// behind the page. The backdrop follows the framed film, and seeking or pausing the
+// film moves the backdrop with it.
+(function film() {
+  const video = document.getElementById("film");
+  const backdrop = document.getElementById("film-bg");
+  if (!video || !backdrop) return;
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let userPaused = reduceMotion;
+  let syncing = false;
+
+  const start = (v) => v.play().catch(() => {});
+  function align() {
+    syncing = true;
+    video.currentTime = backdrop.currentTime;
+  }
+
+  video.addEventListener("seeked", () => {
+    if (syncing) { syncing = false; return; }
+    backdrop.currentTime = video.currentTime; // the guest moved the film
+  });
+  video.addEventListener("pause", () => {
+    // browsers pause muted films that scroll off screen; only a guest's pause counts
+    if (document.visibilityState !== "visible" || syncing) return;
+    const rect = video.getBoundingClientRect();
+    if (rect.bottom > 0 && rect.top < window.innerHeight) {
+      userPaused = true;
+      backdrop.pause();
+    }
+  });
+  video.addEventListener("play", () => {
+    userPaused = false;
+    if (backdrop.paused) start(backdrop);
+  });
+
+  // keep both running and in step: big gaps jump, small drift is eased out by
+  // nudging the backdrop's speed so nothing visibly skips
+  setInterval(() => {
+    if (userPaused || document.visibilityState !== "visible") return;
+    if (backdrop.paused) start(backdrop);
+    if (video.paused) start(video);
+    if (backdrop.readyState < 2 || video.readyState < 2) return;
+    const drift = video.currentTime - backdrop.currentTime;
+    if (Math.abs(drift) > 1) {
+      if (video.paused) align();
+      else backdrop.currentTime = video.currentTime;
+      backdrop.playbackRate = 1;
+    } else {
+      backdrop.playbackRate = 1 + Math.max(-0.1, Math.min(0.1, drift * 0.5));
+    }
+  }, 250);
+
+  if (reduceMotion) {
+    video.removeAttribute("autoplay");
+    backdrop.removeAttribute("autoplay");
+    video.pause();
+    backdrop.pause();
+  } else {
+    start(backdrop);
+    start(video);
+  }
+})();
+
+// The film's own soundtrack is the site's music: it fades in as the card opens and the
+// note button turns it off and on. Browsers only allow sound once the guest has touched
+// the page, so until then the film plays silently and the sound comes in on that touch.
+(function sound() {
+  const film = document.getElementById("film");
   const toggle = document.getElementById("music-toggle");
-  const VOLUME = 0.4;
+  if (!film || !toggle) return;
+  const VOLUME = 0.8;
   let wanted = true;
   try { wanted = localStorage.getItem("music") !== "off"; } catch (e) {}
 
   let fade = 0;
   function fadeTo(target, ms, done) {
     const id = ++fade;
-    const from = audio.volume;
+    const from = film.volume;
     const start = performance.now();
     function step(now) {
       if (id !== fade) return; // a newer fade took over
       const t = Math.max(0, Math.min(1, (now - start) / ms));
-      audio.volume = Math.max(0, Math.min(1, from + (target - from) * t));
+      film.volume = Math.max(0, Math.min(1, from + (target - from) * t));
       if (t < 1) requestAnimationFrame(step);
       else if (done) done();
     }
     requestAnimationFrame(step);
   }
 
-  function play() {
-    audio.volume = 0;
-    const started = audio.play();
-    if (started) started.catch(waitForTouch);
-    fadeTo(VOLUME, 3000);
+  function setState(on) {
+    toggle.setAttribute("aria-pressed", String(on));
+    toggle.setAttribute("aria-label", on ? "Turn sound off" : "Turn sound on");
   }
 
-  function waitForTouch() {
+  function soundOn() {
+    film.volume = 0;
+    film.muted = false;
+    if (film.paused) film.play().catch(() => {});
+    fadeTo(VOLUME, 2500);
+  }
+
+  function soundOff() {
+    fadeTo(0, 400, () => { film.muted = true; });
+  }
+
+  function onFirstTouch() {
     const events = ["pointerdown", "touchend", "keydown"];
     const go = () => {
       events.forEach((e) => window.removeEventListener(e, go, true));
-      if (toggle.getAttribute("aria-pressed") === "true") play();
+      if (toggle.getAttribute("aria-pressed") === "true" && film.muted) soundOn();
     };
     events.forEach((e) => window.addEventListener(e, go, true));
-  }
-
-  function setState(on) {
-    toggle.setAttribute("aria-pressed", String(on));
-    toggle.setAttribute("aria-label", on ? "Pause music" : "Play music");
   }
 
   window.addEventListener("invitation:open", () => {
     toggle.hidden = false;
     setState(wanted);
-    if (wanted) play();
+    if (!wanted) return;
+    // unmuting before the guest has touched the page would make the browser stop the film
+    const touched = navigator.userActivation && navigator.userActivation.hasBeenActive;
+    if (touched) soundOn();
+    else onFirstTouch();
   }, { once: true });
 
   toggle.addEventListener("click", () => {
     const on = toggle.getAttribute("aria-pressed") !== "true";
     setState(on);
     try { localStorage.setItem("music", on ? "on" : "off"); } catch (e) {}
-    if (on) play();
-    else fadeTo(0, 400, () => audio.pause());
+    if (on) soundOn();
+    else soundOff();
+  });
+
+  // the film's own controls can mute it too; keep the button in step
+  film.addEventListener("volumechange", () => {
+    if (fade && film.volume > 0 && film.volume < VOLUME) return; // mid-fade
+    setState(!film.muted && film.volume > 0);
   });
 })();
