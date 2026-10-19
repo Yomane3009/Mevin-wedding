@@ -90,9 +90,10 @@ function createRibbon(canvas) {
   return { draw, resize, ready };
 }
 
-// Opening: the ribbon unties by itself and falls away, the invitation pops up, and the
-// page glides down through the details. It runs the same for every guest, including phones set to
-// reduce motion (common on iPhones): skipping it there jumped straight to the open card
+// Opening: the guest taps the ribbon, it unties and falls away, the invitation pops up,
+// and the page glides down through the details. It runs the same for every guest,
+// including phones set to reduce motion (common on iPhones): skipping it there jumped
+// straight to the open card
 (function opening() {
   const wrap = document.getElementById("card-wrap");
   const card = wrap.querySelector(".card");
@@ -257,9 +258,31 @@ function createRibbon(canvas) {
     sizeUnits();
     if (!started) measure();
   });
-  // open on its own once the ribbon and fonts are in, after a moment to see it tied
-  Promise.all([ribbon.ready, document.fonts ? document.fonts.ready : null])
-    .then(() => { measure(); setTimeout(open, 1200); });
+  // The guest opens it: a tap on the ribbon (or anywhere on the sleeve) unties it.
+  // That tap also counts as permission for sound, so the music starts with the opening.
+  const hint = document.getElementById("open-hint");
+  let ready = false;
+  let asked = false;
+  function tap() {
+    if (started) return;
+    if (!ready) { asked = true; return; }
+    if (hint) hint.hidden = true;
+    wrap.removeAttribute("role");
+    wrap.removeAttribute("tabindex");
+    wrap.removeAttribute("aria-label");
+    open();
+  }
+  wrap.addEventListener("click", tap);
+  wrap.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") { event.preventDefault(); tap(); }
+  });
+  Promise.all([ribbon.ready, document.fonts ? document.fonts.ready : null]).then(() => {
+    measure();
+    ready = true;
+    wrap.classList.add("ready");
+    if (asked) tap();
+    else if (hint) hint.hidden = false;
+  });
 })();
 
 // Countdown to the wedding date set on #countdown[data-date]
@@ -433,13 +456,15 @@ function createRibbon(canvas) {
   requestAnimationFrame(frame);
 })();
 
-// Engagement film: plays on a loop the whole time, with a small blurred copy running
-// behind the page. The backdrop follows the framed film, and seeking or pausing the
-// film moves the backdrop with it.
+// Engagement film: starts as the invitation opens and plays once, with a small blurred
+// copy running behind the page. The backdrop follows the framed film, and seeking or
+// pausing the film moves the backdrop with it. When it ends, a button offers a replay.
 (function film() {
   const video = document.getElementById("film");
   const backdrop = document.getElementById("film-bg");
+  const replay = document.getElementById("film-replay");
   if (!video || !backdrop) return;
+  let running = false;
   let userPaused = false;
   let syncing = false;
 
@@ -455,7 +480,7 @@ function createRibbon(canvas) {
   });
   video.addEventListener("pause", () => {
     // browsers pause muted films that scroll off screen; only a guest's pause counts
-    if (document.visibilityState !== "visible" || syncing) return;
+    if (video.ended || document.visibilityState !== "visible" || syncing) return;
     const rect = video.getBoundingClientRect();
     if (rect.bottom > 0 && rect.top < window.innerHeight) {
       userPaused = true;
@@ -463,15 +488,31 @@ function createRibbon(canvas) {
     }
   });
   video.addEventListener("play", () => {
+    running = true;
     userPaused = false;
+    if (replay) replay.hidden = true;
+    if (backdrop.ended || Math.abs(backdrop.currentTime - video.currentTime) > 1) {
+      backdrop.currentTime = video.currentTime;
+    }
     if (backdrop.paused) start(backdrop);
   });
+  video.addEventListener("ended", () => {
+    backdrop.pause();
+    if (replay) replay.hidden = false;
+  });
+  if (replay) {
+    replay.addEventListener("click", () => {
+      video.currentTime = 0;
+      backdrop.currentTime = 0;
+      start(video);
+    });
+  }
 
-  // keep both running and in step: big gaps jump, small drift is eased out by
-  // nudging the backdrop's speed so nothing visibly skips
+  // keep both running and in step while the film plays: big gaps jump, small drift is
+  // eased out by nudging the backdrop's speed so nothing visibly skips
   setInterval(() => {
-    if (userPaused || document.visibilityState !== "visible") return;
-    if (backdrop.paused) start(backdrop);
+    if (!running || userPaused || video.ended || document.visibilityState !== "visible") return;
+    if (backdrop.paused && !backdrop.ended) start(backdrop);
     if (video.paused) start(video);
     if (backdrop.readyState < 2 || video.readyState < 2) return;
     const drift = video.currentTime - backdrop.currentTime;
@@ -484,8 +525,11 @@ function createRibbon(canvas) {
     }
   }, 250);
 
-  start(backdrop);
-  start(video);
+  window.addEventListener("invitation:open", () => {
+    running = true;
+    start(backdrop);
+    start(video);
+  }, { once: true });
 })();
 
 // The film's own soundtrack is the site's music: it fades in as the card opens and the
