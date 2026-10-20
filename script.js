@@ -206,17 +206,15 @@ function createRibbon(canvas) {
     });
   }
 
-  // Scroll gently to the end of the page so guests see everything once. Scrolling by
-  // hand (a swipe, the wheel or the keys) hands control back to them; a plain tap
-  // does not, so tapping to turn the sound on leaves the tour running
+  // Glide down section by section, resting on each so guests have time to take it in.
+  // Scrolling by hand (a swipe, the wheel or the keys) hands control back to them; a
+  // plain tap does not, so tapping to turn the sound on leaves the tour running
   function tour() {
     if (window.scrollY > 40) return; // the guest has already set off on their own
-    const from = window.scrollY;
-    const distance = document.documentElement.scrollHeight - window.innerHeight - from;
-    if (distance <= 0) return;
-    const duration = Math.min(22000, Math.max(7000, distance * 7));
+    const SPEED = 120; // px per second, on average, between sections
+    const REST = 3000; // ms to linger on each section
+    const sections = [...document.querySelectorAll("main > section:not([hidden]), body > footer")];
     const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
-    const start = performance.now();
     let stopped = false;
     const events = ["wheel", "touchmove", "keydown"];
     // the page scrolls smoothly for links; the tour moves it itself, frame by frame
@@ -229,19 +227,41 @@ function createRibbon(canvas) {
       events.forEach((e) => window.removeEventListener(e, stop));
     };
     events.forEach((e) => window.addEventListener(e, stop, { passive: true }));
-    let expected = from;
+
+    // the next section below the current spot, measured as we reach it
+    let next = 0;
+    function nextLeg(now) {
+      const end = document.documentElement.scrollHeight - window.innerHeight;
+      while (next < sections.length) {
+        const top = sections[next++].getBoundingClientRect().top + window.scrollY - 8;
+        const to = Math.round(Math.min(end, top));
+        const from = window.scrollY;
+        if (to - from > 40) return { from, to, start: now, duration: Math.max(1500, ((to - from) / SPEED) * 1000) };
+      }
+      return null;
+    }
+
+    let leg = null;
+    let restUntil = 0;
+    let expected = window.scrollY;
     (function step(now) {
       if (stopped) return;
       // the page moved somewhere we did not put it: the guest is scrolling
       if (Math.abs(window.scrollY - expected) > 40) return stop();
-      const t = Math.min(1, (now - start) / duration);
-      expected = Math.round(from + distance * ease(t));
+      if (now < restUntil) return requestAnimationFrame(step);
+      if (!leg && !(leg = nextLeg(now))) return stop();
+      const t = Math.min(1, (now - leg.start) / leg.duration);
+      expected = Math.round(leg.from + (leg.to - leg.from) * ease(t));
       window.scrollTo(0, expected);
       expected = window.scrollY; // the browser may clamp or round it
-      if (t < 1) requestAnimationFrame(step);
-      else stop();
-    })(start);
+      if (t === 1) {
+        leg = null;
+        restUntil = now + REST;
+      }
+      requestAnimationFrame(step);
+    })(performance.now());
   }
+
 
   // iOS 15 and older have no container units (cqw), so the card would fall apart;
   // give them the same sizes in pixels through --cq (see styles.css)
