@@ -92,7 +92,7 @@ body {
 }
 
 .stage > *:not(.ambience) { position: relative; z-index: 1; }
-.stage > .scroll-cue, .stage > .open-hint { position: absolute; }
+.stage > .scroll-cue { position: absolute; }
 
 /* Where the invitation lands once it pops out of the sleeve */
 .revealed:empty { display: none; }
@@ -537,27 +537,84 @@ main .highlights { background: transparent; }
   color: var(--gold);
 }
 
-/* Shown on the sealed card until the guest taps the ribbon */
-.open-hint {
+/* Shown on the sealed card until the guest taps the ribbon: a hand slides in from the
+   right and keeps tapping the knot, which sits in the middle of the sleeve. The tip of
+   the finger is at the hand's top-left corner (18px, 2px), placed on the knot. */
+.tap-hand {
   position: absolute;
   left: 50%;
-  bottom: 1.2rem;
-  margin: 0;
-  padding: 0.5rem 1.1rem;
+  top: 50%;
+  width: 0;
+  height: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.tap-hand[hidden], .js .card-wrap.untying .tap-hand { display: none; }
+
+.tap-hand .hand {
+  position: absolute;
+  left: -18px;
+  top: -2px;
+  width: 56px;
+  height: auto;
+  overflow: visible;
+  transform-origin: 18px 2px;
+  filter: drop-shadow(0 6px 10px rgba(60, 40, 10, 0.35));
+  animation: hand-in 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) both, hand-tap 1.3s ease-in-out 1.2s infinite;
+}
+
+.hand-outline { fill: #8a6430; stroke: #8a6430; stroke-width: 4; stroke-linejoin: round; }
+.hand-fill { fill: #fffaf0; }
+
+.tap-ripple {
+  position: absolute;
+  left: -22px;
+  top: -22px;
+  width: 44px;
+  height: 44px;
+  border: 2px solid #fffaf0;
+  border-radius: 50%;
+  opacity: 0;
+  box-shadow: 0 0 12px rgba(255, 250, 240, 0.8);
+  animation: tap-ripple 1.3s ease-out 1.2s infinite;
+}
+
+.tap-label {
+  position: absolute;
+  left: 0;
+  bottom: 30px;
+  padding: 0.45rem 1.1rem;
   border: 1px solid rgba(255, 250, 240, 0.75);
   border-radius: 99px;
   background: #8a6430;
   color: #fffaf0;
-  font: italic 0.9rem var(--serif);
+  font: italic 0.95rem var(--serif);
   letter-spacing: 0.04em;
   white-space: nowrap;
   transform: translateX(-50%);
   box-shadow: 0 6px 18px rgba(60, 40, 10, 0.25);
-  animation: hint-in 0.6s ease both, breathe 2.4s ease-in-out 0.6s infinite;
-  pointer-events: none;
+  animation: hint-in 0.6s ease 1s both, breathe 2.4s ease-in-out 1.6s infinite;
 }
 
-.open-hint[hidden] { display: none; }
+/* slides in from beyond the right edge of the screen */
+@keyframes hand-in {
+  from { opacity: 0; transform: translate(60vw, 40px) rotate(-12deg); }
+  25% { opacity: 1; }
+  to { transform: rotate(-12deg); }
+}
+
+@keyframes hand-tap {
+  0%, 30%, 100% { transform: rotate(-12deg); }
+  45% { transform: translate(-1px, 4px) rotate(-12deg) scale(0.9); }
+  60% { transform: rotate(-12deg); }
+}
+
+@keyframes tap-ripple {
+  0%, 40% { opacity: 0; transform: scale(0.3); }
+  48% { opacity: 0.9; }
+  100% { opacity: 0; transform: scale(2.2); }
+}
 
 .js .card-wrap.ready:not(.untying) { cursor: pointer; }
 
@@ -583,7 +640,43 @@ main .highlights { background: transparent; }
   cursor: pointer;
 }
 
-.film-replay[hidden] { display: none; }
+.film-replay[hidden], .film-prompt[hidden] { display: none; }
+
+/* Shown when the guided scroll reaches the film: it waits here until the guest has
+   watched it through */
+.film-prompt {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  padding: 0.7rem 1.3rem;
+  white-space: nowrap;
+  border: 1px solid rgba(255, 250, 240, 0.85);
+  border-radius: 99px;
+  background: rgba(138, 100, 48, 0.94);
+  color: #fffaf0;
+  font: 1rem var(--serif);
+  letter-spacing: 0.04em;
+  text-align: left;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 8px 24px rgba(40, 25, 5, 0.4);
+  cursor: pointer;
+  animation: prompt-in 0.5s ease both, prompt-breathe 2.4s ease-in-out 0.5s infinite;
+}
+
+.film-prompt svg { flex: none; width: 22px; height: 22px; }
+
+@keyframes prompt-in {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+}
+
+@keyframes prompt-breathe {
+  50% { transform: translate(-50%, -50%) scale(1.05); }
+}
 
 .film-replay svg { width: 20px; height: 20px; }
 

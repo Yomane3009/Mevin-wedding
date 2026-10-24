@@ -74,10 +74,32 @@
         <div class="ribbon" aria-hidden="true">
           <canvas class="ribbon-canvas" id="ribbon-canvas"></canvas>
         </div>
+        <!-- a hand slides in from the right and taps the knot until the guest does -->
+        <div class="tap-hand" id="tap-hand" hidden>
+          <span class="tap-label">Tap here</span>
+          <span class="tap-ripple" aria-hidden="true"></span>
+          <svg class="hand" viewBox="0 0 64 82" aria-hidden="true">
+            <g class="hand-outline">
+              <path d="M12 42 H56 V60 C56 72 48 80 36 80 H28 C18 80 12 72 12 62 Z"/>
+              <path d="M15 52 C7 47 2 53 6 59 L15 68 Z"/>
+              <rect x="14" y="2" width="13" height="46" rx="6.5"/>
+              <rect x="26" y="26" width="11" height="24" rx="5.5"/>
+              <rect x="36" y="30" width="11" height="22" rx="5.5"/>
+              <rect x="46" y="35" width="10" height="19" rx="5"/>
+            </g>
+            <g class="hand-fill">
+              <path d="M12 42 H56 V60 C56 72 48 80 36 80 H28 C18 80 12 72 12 62 Z"/>
+              <path d="M15 52 C7 47 2 53 6 59 L15 68 Z"/>
+              <rect x="14" y="2" width="13" height="46" rx="6.5"/>
+              <rect x="26" y="26" width="11" height="24" rx="5.5"/>
+              <rect x="36" y="30" width="11" height="22" rx="5.5"/>
+              <rect x="46" y="35" width="10" height="19" rx="5"/>
+            </g>
+          </svg>
+        </div>
       </div>
     </div>
     <div class="revealed" id="revealed"></div>
-    <p class="open-hint" id="open-hint" hidden>Tap the ribbon to open your invitation</p>
     <a class="scroll-cue" href="#details" aria-label="See the details"></a>
   </header>
 
@@ -123,6 +145,10 @@
       <h2 class="section-title reveal">Engagement highlights</h2>
       <div class="film reveal">
         <video id="film" src="assets/video/engagement.mp4" poster="assets/video/engagement-poster.jpg" playsinline muted controls preload="auto"></video>
+        <button class="film-prompt" id="film-prompt" type="button" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>
+          Play to watch the whole video
+        </button>
         <button class="film-replay" id="film-replay" type="button" hidden>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4.5h4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Watch again

@@ -207,36 +207,63 @@ function createRibbon(canvas) {
   }
 
   // Glide down section by section, resting on each so guests have time to take it in.
-  // Scrolling by hand (a swipe, the wheel or the keys) hands control back to them; a
-  // plain tap does not, so tapping to turn the sound on leaves the tour running
+  // Each stop frames a whole section: it rests with the section's top at the top of the
+  // screen, and a section taller than the screen gets a second stop at its end. At the
+  // engagement film it waits, with the film paused, until the guest has watched it
+  // through, then carries on to the end. Scrolling by hand (a swipe, the wheel or the
+  // keys) hands control back to them; a plain tap does not, so tapping to turn the
+  // sound on leaves the tour running
   function tour() {
     if (window.scrollY > 40) return; // the guest has already set off on their own
-    const SPEED = 120; // px per second, on average, between sections
-    const REST = 3000; // ms to linger on each section
-    const sections = [...document.querySelectorAll("main > section:not([hidden]), body > footer")];
+    const SPEED = 120; // px per second, on average, between stops
+    const REST = 5500; // ms to linger on each stop
+    const MARGIN = 8; // px of breathing room above a section and below its end
+    const film = document.getElementById("highlights");
+    const blocks = [document.getElementById("revealed"), ...document.querySelectorAll("main > section:not([hidden]), body > footer")];
     const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
     let stopped = false;
     const events = ["wheel", "touchmove", "keydown"];
     // the page scrolls smoothly for links; the tour moves it itself, frame by frame
     // (older Safari does not know scrollTo's "instant", so switch the smoothing off)
     const root = document.documentElement.style;
-    root.scrollBehavior = "auto";
+    const listen = (on) => events.forEach((e) => (on ? window.addEventListener(e, stop, { passive: true }) : window.removeEventListener(e, stop)));
     const stop = () => {
       stopped = true;
       root.scrollBehavior = "";
-      events.forEach((e) => window.removeEventListener(e, stop));
+      listen(false);
     };
-    events.forEach((e) => window.addEventListener(e, stop, { passive: true }));
+    root.scrollBehavior = "auto";
+    listen(true);
 
-    // the next section below the current spot, measured as we reach it
-    let next = 0;
+    // The stops, worked out as we reach each block since the page can still shift
+    // (fonts, the RSVP section appearing): the top of every block, the end of any block
+    // taller than the screen, and the film centred on screen
+    const queue = blocks.flatMap((el) => [{ el, edge: "top" }, { el, edge: "end" }]);
+    function target({ el, edge }) {
+      const box = el.getBoundingClientRect();
+      const top = box.top + window.scrollY;
+      const room = window.innerHeight;
+      if (el === film) {
+        if (edge === "end") return null;
+        const frame = el.querySelector(".film").getBoundingClientRect();
+        return frame.top + window.scrollY - Math.max(MARGIN, (room - frame.height) / 2);
+      }
+      if (edge === "top") return el === blocks[0] ? null : top - MARGIN;
+      if (box.height + MARGIN * 2 <= room) return null; // the top stop already shows all of it
+      return top + box.height + MARGIN - room;
+    }
+
     function nextLeg(now) {
       const end = document.documentElement.scrollHeight - window.innerHeight;
-      while (next < sections.length) {
-        const top = sections[next++].getBoundingClientRect().top + window.scrollY - 8;
-        const to = Math.round(Math.min(end, top));
+      while (queue.length) {
+        const stopAt = queue.shift();
+        const y = target(stopAt);
+        if (y === null) continue;
+        const to = Math.round(Math.max(0, Math.min(end, y)));
         const from = window.scrollY;
-        if (to - from > 40) return { from, to, start: now, duration: Math.max(1500, ((to - from) / SPEED) * 1000) };
+        if (to - from > 40) {
+          return { from, to, start: now, duration: Math.max(1500, ((to - from) / SPEED) * 1000), atFilm: stopAt.el === film };
+        }
       }
       return null;
     }
@@ -244,7 +271,7 @@ function createRibbon(canvas) {
     let leg = null;
     let restUntil = 0;
     let expected = window.scrollY;
-    (function step(now) {
+    function step(now) {
       if (stopped) return;
       // the page moved somewhere we did not put it: the guest is scrolling
       if (Math.abs(window.scrollY - expected) > 40) return stop();
@@ -254,14 +281,31 @@ function createRibbon(canvas) {
       expected = Math.round(leg.from + (leg.to - leg.from) * ease(t));
       window.scrollTo(0, expected);
       expected = window.scrollY; // the browser may clamp or round it
-      if (t === 1) {
-        leg = null;
-        restUntil = now + REST;
-      }
+      if (t < 1) return requestAnimationFrame(step);
+      const reachedFilm = leg.atFilm;
+      leg = null;
+      if (reachedFilm) return waitForFilm();
+      restUntil = now + REST;
       requestAnimationFrame(step);
-    })(performance.now());
-  }
+    }
 
+    // Pause on the film until it has been watched to the end. The guest is free to
+    // swipe around the film's controls meanwhile, so hand-scrolling does not end the
+    // tour here; it picks up again from wherever the page is once the film ends
+    function waitForFilm() {
+      listen(false);
+      window.addEventListener("film:watched", () => {
+        if (stopped) return;
+        listen(true);
+        expected = window.scrollY;
+        restUntil = performance.now() + 1500;
+        requestAnimationFrame(step);
+      }, { once: true });
+      window.dispatchEvent(new Event("tour:film"));
+    }
+
+    requestAnimationFrame(step);
+  }
 
   // iOS 15 and older have no container units (cqw), so the card would fall apart;
   // give them the same sizes in pixels through --cq (see styles.css)
@@ -280,7 +324,8 @@ function createRibbon(canvas) {
   });
   // The guest opens it: a tap on the ribbon (or anywhere on the sleeve) unties it.
   // That tap also counts as permission for sound, so the music starts with the opening.
-  const hint = document.getElementById("open-hint");
+  // Until then a hand slides in and keeps tapping the knot, with "Tap here".
+  const hint = document.getElementById("tap-hand");
   let ready = false;
   let asked = false;
   function tap() {
@@ -483,10 +528,13 @@ function createRibbon(canvas) {
   const video = document.getElementById("film");
   const backdrop = document.getElementById("film-bg");
   const replay = document.getElementById("film-replay");
+  const prompt = document.getElementById("film-prompt");
   if (!video || !backdrop) return;
   let running = false;
   let userPaused = false;
   let syncing = false;
+  let held = false; // the guided scroll has stopped here and is waiting for a full watch
+  let watching = false; // the guest started it from the prompt; tell the tour when it ends
 
   const start = (v) => v.play().catch(() => {});
   function align() {
@@ -500,7 +548,7 @@ function createRibbon(canvas) {
   });
   video.addEventListener("pause", () => {
     // browsers pause muted films that scroll off screen; only a guest's pause counts
-    if (video.ended || document.visibilityState !== "visible" || syncing) return;
+    if (held || video.ended || document.visibilityState !== "visible" || syncing) return;
     const rect = video.getBoundingClientRect();
     if (rect.bottom > 0 && rect.top < window.innerHeight) {
       userPaused = true;
@@ -508,6 +556,13 @@ function createRibbon(canvas) {
     }
   });
   video.addEventListener("play", () => {
+    if (held) {
+      // played from the prompt or the film's own controls: watch it from the start
+      held = false;
+      watching = true;
+      if (prompt) prompt.hidden = true;
+      if (video.currentTime > 0.5) video.currentTime = 0;
+    }
     running = true;
     userPaused = false;
     if (replay) replay.hidden = true;
@@ -519,7 +574,30 @@ function createRibbon(canvas) {
   video.addEventListener("ended", () => {
     backdrop.pause();
     if (replay) replay.hidden = false;
+    if (watching) {
+      watching = false;
+      window.dispatchEvent(new Event("film:watched"));
+    }
   });
+
+  // The guided scroll has reached the film: stop it at the start and ask the guest to
+  // play it, so they see the whole film rather than wherever the loop had got to
+  window.addEventListener("tour:film", () => {
+    held = true;
+    watching = false;
+    video.pause();
+    backdrop.pause();
+    video.currentTime = 0;
+    backdrop.currentTime = 0;
+    if (replay) replay.hidden = true;
+    if (prompt) prompt.hidden = false;
+  });
+  if (prompt) {
+    prompt.addEventListener("click", () => {
+      video.currentTime = 0;
+      start(video);
+    });
+  }
   if (replay) {
     replay.addEventListener("click", () => {
       video.currentTime = 0;
@@ -531,7 +609,7 @@ function createRibbon(canvas) {
   // keep both running and in step while the film plays: big gaps jump, small drift is
   // eased out by nudging the backdrop's speed so nothing visibly skips
   setInterval(() => {
-    if (!running || userPaused || video.ended || document.visibilityState !== "visible") return;
+    if (!running || held || userPaused || video.ended || document.visibilityState !== "visible") return;
     if (backdrop.paused && !backdrop.ended) start(backdrop);
     if (video.paused) start(video);
     if (backdrop.readyState < 2 || video.readyState < 2) return;
