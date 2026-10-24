@@ -217,7 +217,6 @@ function createRibbon(canvas) {
     if (window.scrollY > 40) return; // the guest has already set off on their own
     const SPEED = 120; // px per second, on average, between stops
     const REST = 5500; // ms to linger on each stop
-    const MARGIN = 8; // px of breathing room above a section and below its end
     const film = document.getElementById("highlights");
     const blocks = [document.getElementById("revealed"), ...document.querySelectorAll("main > section:not([hidden]), body > footer")];
     const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
@@ -236,8 +235,10 @@ function createRibbon(canvas) {
     listen(true);
 
     // The stops, worked out as we reach each block since the page can still shift
-    // (fonts, the RSVP section appearing): the top of every block, the end of any block
-    // taller than the screen, and the film centred on screen
+    // (fonts, the RSVP section appearing): the top of every block flush with the top of
+    // the screen, and the end of any block taller than the screen flush with the bottom,
+    // so no stop shows a sliver of the next section. The film's section starts afresh
+    // at the top too, unless it is taller than the screen, when the film is centred
     const queue = blocks.flatMap((el) => [{ el, edge: "top" }, { el, edge: "end" }]);
     function target({ el, edge }) {
       const box = el.getBoundingClientRect();
@@ -245,12 +246,13 @@ function createRibbon(canvas) {
       const room = window.innerHeight;
       if (el === film) {
         if (edge === "end") return null;
+        if (box.height <= room) return top;
         const frame = el.querySelector(".film").getBoundingClientRect();
-        return frame.top + window.scrollY - Math.max(MARGIN, (room - frame.height) / 2);
+        return frame.top + window.scrollY - Math.max(0, (room - frame.height) / 2);
       }
-      if (edge === "top") return el === blocks[0] ? null : top - MARGIN;
-      if (box.height + MARGIN * 2 <= room) return null; // the top stop already shows all of it
-      return top + box.height + MARGIN - room;
+      if (edge === "top") return el === blocks[0] ? null : top;
+      if (box.height <= room) return null; // the top stop already shows all of it
+      return top + box.height - room;
     }
 
     function nextLeg(now) {
