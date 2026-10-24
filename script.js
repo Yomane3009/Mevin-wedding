@@ -325,13 +325,13 @@ function createRibbon(canvas) {
   // The guest opens it: a tap on the ribbon (or anywhere on the sleeve) unties it.
   // That tap also counts as permission for sound, so the music starts with the opening.
   // Until then a hand slides in and keeps tapping the knot, with "Tap here".
-  const hint = document.getElementById("tap-hand");
+  const hints = ["tap-hand", "open-hint"].map((id) => document.getElementById(id)).filter(Boolean);
   let ready = false;
   let asked = false;
   function tap() {
     if (started) return;
     if (!ready) { asked = true; return; }
-    if (hint) hint.hidden = true;
+    hints.forEach((el) => (el.hidden = true));
     wrap.removeAttribute("role");
     wrap.removeAttribute("tabindex");
     wrap.removeAttribute("aria-label");
@@ -346,7 +346,7 @@ function createRibbon(canvas) {
     ready = true;
     wrap.classList.add("ready");
     if (asked) tap();
-    else if (hint) hint.hidden = false;
+    else hints.forEach((el) => (el.hidden = false));
   });
 })();
 

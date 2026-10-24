@@ -92,7 +92,7 @@ body {
 }
 
 .stage > *:not(.ambience) { position: relative; z-index: 1; }
-.stage > .scroll-cue { position: absolute; }
+.stage > .scroll-cue, .stage > .open-hint { position: absolute; }
 
 /* Where the invitation lands once it pops out of the sleeve */
 .revealed:empty { display: none; }
@@ -536,6 +536,28 @@ main .highlights { background: transparent; }
   font-size: 2rem;
   color: var(--gold);
 }
+
+/* The written hint at the foot of the sealed card, shown with the tapping hand */
+.open-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 1.2rem;
+  margin: 0;
+  padding: 0.5rem 1.1rem;
+  border: 1px solid rgba(255, 250, 240, 0.75);
+  border-radius: 99px;
+  background: #8a6430;
+  color: #fffaf0;
+  font: italic 0.9rem var(--serif);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  box-shadow: 0 6px 18px rgba(60, 40, 10, 0.25);
+  animation: hint-in 0.6s ease both, breathe 2.4s ease-in-out 0.6s infinite;
+  pointer-events: none;
+}
+
+.open-hint[hidden] { display: none; }
 
 /* Shown on the sealed card until the guest taps the ribbon: a hand slides in from the
    right and keeps tapping the knot, which sits in the middle of the sleeve. The tip of
