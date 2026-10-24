@@ -525,11 +525,10 @@ function createRibbon(canvas) {
 
 // Engagement film: starts as the invitation opens and plays once, with a small blurred
 // copy running behind the page. The backdrop follows the framed film, and seeking or
-// pausing the film moves the backdrop with it. When it ends, a button offers a replay.
+// pausing the film moves the backdrop with it. When it ends, the play prompt comes back.
 (function film() {
   const video = document.getElementById("film");
   const backdrop = document.getElementById("film-bg");
-  const replay = document.getElementById("film-replay");
   const prompt = document.getElementById("film-prompt");
   if (!video || !backdrop) return;
   let running = false;
@@ -562,12 +561,11 @@ function createRibbon(canvas) {
       // played from the prompt or the film's own controls: watch it from the start
       held = false;
       watching = true;
-      if (prompt) prompt.hidden = true;
       if (video.currentTime > 0.5) video.currentTime = 0;
     }
     running = true;
     userPaused = false;
-    if (replay) replay.hidden = true;
+    if (prompt) prompt.hidden = true;
     if (backdrop.ended || Math.abs(backdrop.currentTime - video.currentTime) > 1) {
       backdrop.currentTime = video.currentTime;
     }
@@ -575,7 +573,7 @@ function createRibbon(canvas) {
   });
   video.addEventListener("ended", () => {
     backdrop.pause();
-    if (replay) replay.hidden = false;
+    if (prompt) prompt.hidden = false;
     if (watching) {
       watching = false;
       window.dispatchEvent(new Event("film:watched"));
@@ -591,17 +589,10 @@ function createRibbon(canvas) {
     backdrop.pause();
     video.currentTime = 0;
     backdrop.currentTime = 0;
-    if (replay) replay.hidden = true;
     if (prompt) prompt.hidden = false;
   });
   if (prompt) {
     prompt.addEventListener("click", () => {
-      video.currentTime = 0;
-      start(video);
-    });
-  }
-  if (replay) {
-    replay.addEventListener("click", () => {
       video.currentTime = 0;
       backdrop.currentTime = 0;
       start(video);
